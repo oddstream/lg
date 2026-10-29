@@ -33,6 +33,7 @@ local function tprint (tbl, indent)
 end
 
 function TransitionToScene(scene)
+	assert(scene and type(scene) == "table" and type(scene.name) == "string", "Invalid scene object")
 	print("Transitioning to scene: " .. scene.name)
 	stage:push(scene)
 end
@@ -49,6 +50,10 @@ end
 ---@param key string
 function love.keypressed(key)
 	stage:keypressed(key)
+end
+
+function love.resize(w, h)
+	stage:resize(w, h)
 end
 
 ---@param dt_seconds number

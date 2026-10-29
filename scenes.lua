@@ -50,6 +50,15 @@ function Scenes:keypressed(key)
     end
 end
 
+---@param w number
+---@param h number
+function Scenes:resize(w, h)
+    print("Scenes resized to: " .. w .. "x" .. h)
+    if self.stack[1] then
+        self.stack[1]:resize(w, h)
+    end
+end
+
 ---@param dt_seconds number
 function Scenes:update(dt_seconds)
     if self.stack[1] then

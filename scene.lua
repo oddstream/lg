@@ -7,6 +7,7 @@
 ---@field load function()
 ---@field unload function()
 ---@field keypressed function(key:string)
+---@field resize function(w:number, h:number)
 ---@field update function(dt_seconds:number)
 ---@field draw function()
 
@@ -33,6 +34,11 @@ end
 ---@param key string
 function Scene:keypressed(key)
     print("Key pressed in scene " .. self.name .. ": " .. key)
+    -- override in subclass
+end
+
+function Scene:resize(w, h)
+    print("Scene " .. self.name .. " resized to: " .. w .. "x" .. h)
     -- override in subclass
 end
 
