@@ -5,30 +5,34 @@ local Card = require 'card'
 
 ---@class (exact) Discard: Pile
 ---@field __index Discard
----@field x integer
----@field y integer
+---@field __tostring function
 ---@field new function
----@field SetPosition function
----@
+---@field setPosition function
 
 local Discard = {}
 Discard.__index = Discard
 setmetatable(Discard, {__index = Pile})
 
-function Discard.new()
-    local o = {x=0, y=0, cards={}}
-    setmetatable(o, Discard)
-    return o
+---@return string
+function Discard:__tostring()
+	return string.format('discard(%d)', #self.cards)
 end
 
-function Discard:SetPosition()
+---@return Discard
+function Discard.new()
+    local o = Pile.new()
+    return setmetatable(o, Discard)
+end
+
+function Discard:setPosition()
 	local width, height, _ = love.window.getMode()
     self.x = (width / 2) - (_G.SETTINGS.cardWidth / 2)
     self.y = (height / 2) - (_G.SETTINGS.cardHeight / 2)
 
     self.x = self.x + (_G.SETTINGS.cardWidth * 0.75)
+    self:repositionCards()
 end
 
--- draw is handled by Pile
+-- update, draw handled by Pile
 
 return Discard

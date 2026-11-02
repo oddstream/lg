@@ -15,9 +15,11 @@ function Baize.new()
     local o = Scene.new('baize')
 	o.backgroundCanvas = nil
 	o.stock = Stock.new()
-	o.stock:SetPosition()
+	o.stock:setPosition()
+	o.stock:fill()
+	o.stock:shuffle()
 	o.discard = Discard.new()
-	o.discard:SetPosition()
+	o.discard:setPosition()
 	return setmetatable(o, Baize)
 end
 
@@ -41,8 +43,8 @@ end
 function Baize:resize(w, h)
 	print("Baize resized to: " .. w .. "x" .. h)
 	self.backgroundCanvas = nil
-	self.stock:SetPosition()
-	self.discard:SetPosition()
+	self.stock:setPosition()
+	self.discard:setPosition()
 end
 
 ---@param dt_seconds number

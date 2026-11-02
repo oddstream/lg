@@ -46,7 +46,7 @@ end
 
 ---@param x number
 ---@param y number
-function Card:setPos(x, y)
+function Card:setPosition(x, y)
 	self.x = x
 	self.y = y
 	self:stopTransition()
@@ -54,7 +54,7 @@ end
 
 ---@return number
 ---@return number
-function Card:getPos()
+function Card:getPosition()
 	return self.x, self.y
 end
 
@@ -135,15 +135,15 @@ end
 ---@param x number
 ---@param y number
 function Card:transitionTo(x, y)
-
+    -- print(self.x, self.y, 'to', x, y)
 	if self.x == x and self.y == y then
-		self:setPos(x, y)
+		self:setPosition(x, y)
 		return
 	end
 
 	if self.dst then
 		if self:nearEnough() then
-			self:setPos(x, y)
+			self:setPosition(x, y)
 			return	-- repeat request
 		end
 	end
@@ -171,7 +171,7 @@ end
 ---@param dx number
 ---@param dy number
 function Card:dragBy(dx, dy)
-	self:setPos(self.dragStart.x + dx, self.dragStart.y + dy)
+	self:setPosition(self.dragStart.x + dx, self.dragStart.y + dy)
 end
 
 function Card:cancelDrag()
@@ -221,7 +221,7 @@ function Card:update(dt_seconds)
 			-- we have arrived at our destination
 			-- make sure card is in proper place
 			-- and terminate any transition
-			self:setPos(self.dst.x, self.dst.y)	-- also stops lerping
+			self:setPosition(self.dst.x, self.dst.y)	-- also stops lerping
 		end
 	end
 
@@ -246,7 +246,7 @@ function Card:update(dt_seconds)
 end
 
 function Card:draw()
-	local x, y = self:getPos()
+	local x, y = self:getPosition()
 
 	-- very important!: reset color before drawing to canvas to have colors properly displayed
 	-- see discussion here: https://love2d.org/forums/viewtopic.php?f=4&p=211418#p211418
@@ -296,6 +296,5 @@ function Card:draw()
 		love.graphics.draw(img, x, y)
 	end
 end
-
 
 return Card

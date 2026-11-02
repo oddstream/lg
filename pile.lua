@@ -14,6 +14,11 @@ local Card = require 'card'
 local Pile = {}
 Pile.__index = Pile
 
+function Pile.new()
+    local o = {x=0, y=0, cards={}}
+    return setmetatable(o, Pile)
+end
+
 function Pile:shuffle()
 	-- https://en.wikipedia.org/wiki/Shuffling
     -- https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
@@ -47,6 +52,12 @@ function Pile:push(c)
 	table.insert(self.cards, c)
 	c.owner = self
 	c:transitionTo(self.x, self.y)
+end
+
+function Pile:repositionCards()
+	for _, c in ipairs(self.cards) do
+		c:setPosition(self.x, self.y)
+	end
 end
 
 ---@param dt_seconds number
