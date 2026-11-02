@@ -1,11 +1,11 @@
 -- scene_splash.lua
 
-require 'colors'
-
 local Util = require 'util'
 
 local Scene = require 'scene'
-local scene_menu = require 'scene_menu'
+local baize = require 'baize'
+
+require 'colors'
 
 local Splash = {}
 Splash.__index = Splash
@@ -36,7 +36,7 @@ end
 ---@param key string
 function Splash:keypressed(key)
     print('Splash key pressed: ' .. key)
-	TransitionToScene(scene_menu.new())
+	TransitionToScene(baize.new())
 end
 
 function Splash:resize(w, h)
@@ -45,14 +45,10 @@ function Splash:resize(w, h)
 end
 
 function Splash:draw()
-	-- use color picked from the logo image for the gradient background
-	-- https://imagecolorpicker.com/
-	local logoBlue = {39, 170, 225}
 	-- create gradient canvas here so that it is recreated on resize
 	if self.backgroundCanvas == nil then
-		self.backgroundCanvas = Util.createGradientCanvas(logoBlue)
+		self.backgroundCanvas = Util.createGradientCanvas(_G.COLORS.LoveLogoBlue)
 	end
-	love.math.colorFromBytes(unpack(logoBlue))
 	love.graphics.draw(self.backgroundCanvas, 0, 0)
 
 	love.graphics.setColor(1, 1, 1, self.alpha)
@@ -69,7 +65,7 @@ function Splash:update(dt)
 		self.alpha = math.max(0, 1 - (self.elapsed - self.hold) / self.fade)
 	end
 	if self.alpha <= 0.0 then
-		TransitionToScene(scene_menu.new())
+		TransitionToScene(baize.new())
 	end
 end
 

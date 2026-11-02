@@ -1,7 +1,28 @@
 -- main.lua
 
+require 'settings'
+require 'cardfactory'
+
 local scenes = require 'scenes'
-local scene_splash = require 'scene_splash'
+local splash = require 'splash'
+
+---@type love.Canvas[]
+_G.cardFaceTextures = {}
+
+---@type love.Canvas
+_G.cardBackTexture = {}
+
+---@type love.Canvas
+_G.cardShadowTexture = {}
+
+---@type string[]
+_G.ORD2STRING = {'A','2','3','4','5','6','7','8','9','10','J','Q','K'}
+
+---@type string
+_G.ORD_FONT = 'assets/fonts/Acme-Regular.ttf'
+
+---@type string
+_G.SUIT_FONT = 'assets/fonts/DejaVuSans.ttf'
 
 -- instance of a Scenes object, holding stack of scenes, with the current scene at index 1
 -- local to this file, but accessible to all scene files via the TransitionToScene() function below
@@ -44,7 +65,12 @@ function love.load(args)
 
 	stage = scenes.new()
 
-	TransitionToScene(scene_splash.new())
+ 	_G.SETTINGS.Calculate()
+  _G.cardFaceTextures, _G.cardBackTexture, _G.cardShadowTexture = cardTextureFactory(_G.SETTINGS.cardWidth, _G.SETTINGS.cardHeight, _G.SETTINGS.cardRadius)
+  assert(_G.cardFaceTextures)
+  assert(type(_G.cardFaceTextures) == 'table')
+  assert(_G.cardFaceTextures[string.format('%02u%s', 1, '♠')])
+	TransitionToScene(splash.new())
 end
 
 ---@param key string
@@ -53,7 +79,9 @@ function love.keypressed(key)
 end
 
 function love.resize(w, h)
-	stage:resize(w, h)
+  _G.SETTINGS.Calculate()
+  _G.cardFaceTextures, _G.cardBackTexture, _G.cardShadowTexture = cardTextureFactory(_G.SETTINGS.cardWidth, _G.SETTINGS.cardHeight, _G.SETTINGS.cardRadius)
+ 	stage:resize(w, h)
 end
 
 ---@param dt_seconds number

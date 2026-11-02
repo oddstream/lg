@@ -96,4 +96,11 @@ function Util.createGradientCanvas(color)
 	return canvas
 end
 
+---@param ord number
+---@param suit string
+---@return string
+function Util.cardTextureId(ord, suit)
+	return string.format('%02u%s', ord, suit)
+end
+
 return Util
