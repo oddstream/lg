@@ -21,6 +21,7 @@ local Util = require 'util'
 ---@field lerpStartTime number|nil
 ---@field __index Card
 ---@field __tostring function
+---@field value function
 ---@field new function
 ---@field setPosition function
 ---@field getPosition function
@@ -50,6 +51,10 @@ Card.__index = Card
 
 function Card:__tostring()
 	return self.textureId
+end
+
+function Card:value()
+	return math.min(self.ord, 10)
 end
 
 function Card.new(o)

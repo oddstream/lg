@@ -11,12 +11,12 @@ Cribbage
 Noddy
 
 # NEXT
-Create a fan pile
-Reposition cards in the fan by dragging them
+Mini displays for melds and deadwood (see https://www.gin-rummy-online.com/)
 
-Create a pack of cards, face down, in a stock pile in the middle of the screen
-(pile is good for stock and discard, roboto and user's cards will need a 'fan')
-(and minifans later for the melds/sets(flushes)/runs(straights))
+full card 40 wide, 54 high
+mini card  7 wide,  9 high
+... mini cards approx 1/6 size of full cards
+... ordinal centered in top third, suit centered in bottom two thirds
 
 ### Card movement
 Stock card can be dragged to the human hand (when allowed by FSM, transition back if not) (flip)
@@ -26,22 +26,6 @@ Human hand card can only be dragged (a) left and right, or (b) up to the discard
 -- when starting dragging, remove card from table
 -- when dragging is over, either return card to source table, or insert it into target table
 -- check mouseTapped (because mouseReleased happens afterwards, at present)
-
-local function insertByX(objects, newObject)
-    local left, right = 1, #objects + 1
-
-    -- Find the first position whose x is >= newObject.x
-    while left < right do
-        local mid = math.floor((left + right) / 2)
-        if objects[mid].x < newObject.x then
-            left = mid + 1
-        else
-            right = mid
-        end
-    end
-
-    table.insert(objects, left, newObject)
-end
 
 No baize dragging, no card spinning, YAGNI
 

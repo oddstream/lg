@@ -25,9 +25,9 @@ function Baize.new()
 
 	o.discard = Discard.new()
 	
-	o.computerCards = Hand.new('computer')
+	o.computerCards = Hand.new(_G.SETTINGS.computerName)
 
-	o.humanCards = Hand.new('human')
+	o.humanCards = Hand.new(_G.SETTINGS.humanName)
 
 	o:deal()
 
