@@ -4,7 +4,7 @@
 ---@field stack Scene[] list of scenes, with the current scene at index 1
 ---@field push function(scene:Scene)
 ---@field pop function()
----@field keypressed function(key:string)
+---@field keyPressed function(key:string)
 ---@field update function(dt_seconds:number)
 ---@field draw function()
 ---@field quit function()
@@ -42,11 +42,44 @@ function Scenes:pop()
     end
 end
 
+---@param x number
+---@param y number
+---@param button number
+---@param istouch boolean
+---@param presses number
+function Scenes:mousePressed(x, y, button, istouch, presses)
+    if self.stack[1] then
+        self.stack[1]:mousePressed(x, y, button, istouch, presses)
+    end
+end
+
+---@param x number
+---@param y number
+---@param dx number
+---@param dy number
+---@param istouch boolean
+function Scenes:mouseMoved(x, y, dx, dy, istouch)
+    if self.stack[1] then
+        self.stack[1]:mouseMoved(x, y, dx, dy, istouch)
+    end
+end
+
+---@param x number
+---@param y number
+---@param button number
+---@param istouch boolean
+---@param presses number
+function Scenes:mouseReleased(x, y, button, istouch, presses)
+    if self.stack[1] then
+        self.stack[1]:mouseReleased(x, y, button, istouch, presses)
+    end
+end
+
 ---@param key string
-function Scenes:keypressed(key)
+function Scenes:keyPressed(key)
     print("Scenes key pressed: " .. key)
     if self.stack[1] then
-        self.stack[1]:keypressed(key)
+        self.stack[1]:keyPressed(key)
     end
 end
 

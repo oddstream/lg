@@ -66,6 +66,22 @@ function Util.clamp(value, min, max)
 	return math.min(math.max(value, min), max)
 end
 
+---returns the intersection area of two rectangles
+---@param x number
+---@param y number
+---@param w number
+---@param h number
+---@param X number
+---@param Y number
+---@param W number
+---@param H number
+---@return number
+function Util.overlapArea(x, y, w, h, X, Y, W, H)
+	local ox = math.max(0, math.min(x + w, X + W) - math.max(x, X));
+	local oy = math.max(0, math.min(y + h, Y + H) - math.max(y, Y));
+	return ox * oy;
+end
+
 ---@param color table
 ---@return love.Canvas
 function Util.createGradientCanvas(color)
@@ -101,6 +117,17 @@ end
 ---@return string
 function Util.cardTextureId(ord, suit)
 	return string.format('%02u%s', ord, suit)
+end
+
+---@param x number
+---@param y number
+---@param rx number
+---@param ry number
+---@param rw number
+---@param rh number
+---@return boolean
+function Util.inRect(x, y, rx, ry, rw, rh)
+	return x >= rx and y >= ry and x < (rx + rw) and y < (ry + rh)
 end
 
 return Util

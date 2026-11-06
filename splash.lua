@@ -15,8 +15,8 @@ function Splash.new()
 	local o = Scene.new('splash')
 	o.logo = nil
 	o.elapsed = 0.0	-- seconds since scene started
-	o.hold = 0.5	-- nothing happens for this many seconds, then fade out starts
-	o.fade = 1.5	-- fade out over this many seconds
+	o.hold = 0.1	-- nothing happens for this many seconds, then fade out starts
+	o.fade = 0.5	-- fade out over this many seconds
 	o.alpha = 1.0
 	o.backgroundCanvas = nil
 	return setmetatable(o, Splash)
@@ -34,7 +34,7 @@ function Splash:unload()
 end
 
 ---@param key string
-function Splash:keypressed(key)
+function Splash:keyPressed(key)
     print('Splash key pressed: ' .. key)
 	TransitionToScene(baize.new())
 end

@@ -31,13 +31,13 @@ local stage
 local function tprint (tbl, indent)
   if not indent then indent = 0 end
   local toprint = string.rep(" ", indent) .. "{\r\n"
-  indent = indent + 2 
+  indent = indent + 2
   for k, v in pairs(tbl) do
     toprint = toprint .. string.rep(" ", indent)
     if (type(k) == "number") then
       toprint = toprint .. "[" .. k .. "] = "
     elseif (type(k) == "string") then
-      toprint = toprint  .. k ..  "= "   
+      toprint = toprint  .. k ..  "= "
     end
     if (type(v) == "number") then
       toprint = toprint .. v .. ",\r\n"
@@ -73,15 +73,42 @@ function love.load(args)
 	TransitionToScene(splash.new())
 end
 
+---@param x number
+---@param y number
+---@param button number
+---@param istouch boolean
+---@param presses number
+function love.mousepressed(x, y, button, istouch, presses)
+	stage:mousePressed(x, y, button, istouch, presses)
+end
+
+---@param x number
+---@param y number
+---@param dx number
+---@param dy number
+---@param istouch boolean
+function love.mousemoved(x, y, dx, dy, istouch)
+	stage:mouseMoved(x, y, dx, dy, istouch)
+end
+
+---@param x number
+---@param y number
+---@param button number
+---@param istouch boolean
+---@param presses number
+function love.mousereleased(x, y, button, istouch, presses)
+	stage:mouseReleased(x, y, button, istouch, presses)
+end
+
 ---@param key string
 function love.keypressed(key)
-	stage:keypressed(key)
+	stage:keyPressed(key)
 end
 
 function love.resize(w, h)
   _G.SETTINGS.Calculate()
   _G.cardFaceTextures, _G.cardBackTexture, _G.cardShadowTexture = cardTextureFactory(_G.SETTINGS.cardWidth, _G.SETTINGS.cardHeight, _G.SETTINGS.cardRadius)
- 	stage:resize(w, h)
+  stage:resize(w, h)
 end
 
 ---@param dt_seconds number

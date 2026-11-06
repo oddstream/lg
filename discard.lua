@@ -1,7 +1,6 @@
 -- discard.lua
 
 local Pile = require 'pile'
-local Card = require 'card'
 
 ---@class (exact) Discard: Pile
 ---@field __index Discard

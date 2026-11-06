@@ -5,6 +5,8 @@
 -- PokerRatio   = 1.39
 
 _G.SETTINGS = {
+    debug = true,
+
     cardHeight = 200,
     cardWidth = 200 / 1.444,
     cardRatioPortrait = 1.444,
@@ -15,9 +17,13 @@ _G.SETTINGS = {
 }
 
 _G.SETTINGS.Calculate = function()
-	local _, wh, _ = love.window.getMode()
-    _G.SETTINGS.cardHeight = wh / 4
-    _G.SETTINGS.cardWidth = _G.SETTINGS.cardHeight / _G.SETTINGS.cardRatioPortrait
+    -- set the card size to allow 12 cards to fit across the width of the window
+    -- hand is 10 + 1 so 12 will leave margins
+	local ww, wh, _ = love.window.getMode()
+    -- _G.SETTINGS.cardHeight = wh / 4
+    -- _G.SETTINGS.cardWidth = _G.SETTINGS.cardHeight / _G.SETTINGS.cardRatioPortrait
+    _G.SETTINGS.cardWidth = ww / 12
+    _G.SETTINGS.cardHeight = _G.SETTINGS.cardWidth * _G.SETTINGS.cardRatioPortrait
     _G.SETTINGS.cardRoundness = _G.SETTINGS.cardWidth / 10
     _G.SETTINGS.cardRadius = _G.SETTINGS.cardWidth / _G.SETTINGS.cardRatioPortrait / _G.SETTINGS.cardRoundness
 end

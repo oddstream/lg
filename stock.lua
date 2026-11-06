@@ -1,5 +1,7 @@
 -- stock.lua
 
+local log = require 'log'
+
 local Pile = require 'pile'
 local Card = require 'card'
 
@@ -7,6 +9,8 @@ local Card = require 'card'
 ---@field __index Stock
 ---@field __tostring function
 ---@field new function
+---@field fill function
+---@field shuffle function
 ---@field setPosition function
 
 local Stock = {}
@@ -25,16 +29,25 @@ function Stock.new()
 end
 
 function Stock:fill()
-    -- local ords = {1,2,3,4,5,6,7,8,9,10,11,12,13}
-    local ords = {1}
-    -- local suits = {'♣','♦','♥','♠'}
-    local suits = {'♣'}
+    local ords = {1,2,3,4,5,6,7,8,9,10,11,12,13}
+    local suits = {'♣','♦','♥','♠'}
     for _, ord in ipairs(ords) do
         for _, suit in ipairs(suits) do
             Pile.push(self, Card.new({ord=ord, suit=suit, prone=true}))
             -- card owner is assigned in Pile.push
         end
     end
+end
+
+function Stock:shuffle()
+	-- https://en.wikipedia.org/wiki/Shuffling
+    -- https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
+	for i = #self.cards, 2, -1 do
+		local j = math.random(i)
+		if i ~= j then
+			self.cards[i], self.cards[j] = self.cards[j], self.cards[i]
+		end
+	end
 end
 
 function Stock:setPosition()
@@ -44,6 +57,7 @@ function Stock:setPosition()
 
     self.x = self.x - (_G.SETTINGS.cardWidth * 0.75)
     self:repositionCards()
+    log.trace("Stock:setPosition()", self, self.x, self.y)
 end
 
 -- update, draw handled by Pile

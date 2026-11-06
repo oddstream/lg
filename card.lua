@@ -1,5 +1,7 @@
 -- card
 
+local log = require 'log'
+
 local Util = require 'util'
 
 ---@class (exact) Card
@@ -11,9 +13,36 @@ local Util = require 'util'
 ---@field prone boolean
 ---@field flipWidth number
 ---@field flipDirection number
----@field owner Pile|Fan
+---@field owner Pile
+---@field dragStart {x:number, y:number}|nil
+---@field src {x:number, y:number}|nil
+---@field dst {x:number, y:number}|nil
+---@field flipStartTime number|nil
+---@field lerpStartTime number|nil
+---@field __index Card
+---@field __tostring function
 ---@field new function
+---@field setPosition function
+---@field getPosition function
+---@field getRect function
+---@field getStaticRect function
 ---@field transitionTo function
+---@field flipUp function
+---@field flipDown function
+---@field flip function
+---@field flipping function
+---@field static function
+---@field transitioning function
+---@field nearEnough function
+---@field stopTransition function
+---@field dragging function
+---@field startDrag function
+---@field dragBy function
+---@field cancelDrag function
+---@field stopDrag function
+---@field wasDragged function
+---@field update function(dt_seconds:number)
+---@field draw function()
 
 local Card = {
 }
@@ -123,8 +152,8 @@ end
 
 ---@return boolean
 function Card:nearEnough()
-	return math.abs(self.x - self.dst.x) < 1.0 and math.abs(self.y - self.dst.y) < 1.0
-	-- return self.x == self.dst.x and self.y == self.dst.y
+	-- return math.abs(self.x - self.dst.x) < 1.0 and math.abs(self.y - self.dst.y) < 1.0
+	return self.x == self.dst.x and self.y == self.dst.y
 end
 
 function Card:stopTransition()
@@ -135,7 +164,7 @@ end
 ---@param x number
 ---@param y number
 function Card:transitionTo(x, y)
-    -- print(self.x, self.y, 'to', x, y)
+    -- log.trace(self, self.x, self.y, 'to', x, y)
 	if self.x == x and self.y == y then
 		self:setPosition(x, y)
 		return
@@ -259,7 +288,7 @@ function Card:draw()
 			img = _G.cardFaceTextures[self.textureId]
 		else
 			-- card is getting narrower, and it's going to show face up, but show face down
-			img = _G..cardBackTexture
+			img = _G.cardBackTexture
 		end
 	else
 		if self.prone then
