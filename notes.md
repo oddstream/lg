@@ -11,6 +11,10 @@ Cribbage
 Noddy
 
 # NEXT
+deadwood total to right of Hand
+https://love2d.org/wiki/love.window.showMessageBox
+Baize:recallToStock()
+
 FSM object
 Permissions/Okay object (let the user do a thing, check if it's okay, and undo it if not)
 No UI, so _Global objects

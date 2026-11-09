@@ -21,7 +21,6 @@ local Card = require 'card'
 ---@field cardDragged function(c:Card)
 ---@field removeCard function(c:Card)
 ---@field insertCard function(c:Card)
----@field cardTapped function(c:Card)
 ---@field fan function
 ---@field indexOf function(c:Card):integer|nil
 ---@field repositionCards function
@@ -100,13 +99,6 @@ function Pile:insertCard(c)
 	-- default behaviour, push, good for stock and discard piles
 	-- can be overriden by subclasses
 	self:push(c)
-end
-
----@param c Card, still in it's owning pile
-function Pile:cardTapped(c)
-	assert(Card.isCard(c))
-	log.trace("Pile:cardTapped()", c)
-	c.owner:push(c)
 end
 
 function Pile:fan()

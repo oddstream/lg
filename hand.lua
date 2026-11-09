@@ -11,7 +11,6 @@ local Pile = require 'pile'
 ---@field playerName string
 ---@field new function
 ---@field setPosition function
----@field cardTapped function(c:Card)
 ---@field cardDragged function(c:Card)
 ---@field fan function
 ---@field sort function
@@ -48,15 +47,6 @@ function Hand:push(c)
         c:flipDown()
     end
     log.trace("Hand:push()", self, c, c.owner)
-end
-
----@param c Card, taken out of it's owning pile, but .owner still set
-function Hand:cardTapped(c)
-	assert(Card.isCard)
-    assert(c.owner.playerName)
-	log.trace("Hand:cardTapped()", c)
-	c.owner:push(c)
-    c.owner:fan()
 end
 
 ---@param c Card, has been dragged to a new x,y position in this hand

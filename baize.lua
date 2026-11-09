@@ -20,11 +20,11 @@ function Baize.new()
 	setmetatable(o, Baize)
 
 	o.backgroundCanvas = nil
-	o.stock = Stock.new(o)
+	o.stock = Stock.new()
 	o.stock:fill()
 	o.stock:shuffle()
 
-	o.discard = Discard.new(o)
+	o.discard = Discard.new()
 	
 	o.computerCards = Hand.new(_G.SETTINGS.computerName)
 
@@ -182,6 +182,8 @@ end
 ---@param istouch boolean
 ---@param presses number
 function Baize:mouseReleased(x, y, button, istouch, presses)
+	-- do the card drag and tap moving logic at the Baize level
+	-- because piles don't know about other piles
 	if not self.stroke then
 		return
 	end
@@ -198,10 +200,9 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 				if card.owner == dst then
 					card:stopDrag()
 					card.owner:cardDragged(card)
-				else
-					-- dragging card to a different pile
-					card.owner:removeCard(card)
+				else-- dragging card to a different pile
 					-- remove card from src pile (pile:pop() | table.remove() + fan())
+					card.owner:removeCard(card)
 					-- insert card into dst pile (push() | table.insert())
 					dst:insertCard(card)
 					assert(card.owner==dst)
@@ -212,8 +213,26 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 					card:stopDrag()
 				end
 			end
-		else
+		else-- card was not dragged, so we'll call that a tap
 			log.info('mouseReleased', card, 'not dragged')
+			if card.owner == self.stock then
+				card:stopDrag()
+				self.stock:pop()
+				self.humanCards:push(card)
+				self.humanCards:fan()
+			elseif card.owner == self.discard then
+				card:stopDrag()
+				self.discard:pop()
+				self.humanCards:push(card)
+				self.humanCards:fan()
+			elseif card.owner == self.humanCards then
+				card:stopDrag()
+				self.humanCards:removeCard(card)
+				self.humanCards:fan()
+				self.discard:push(card)
+			else
+				card:cancelDrag()
+			end
 		end
 	end
 	self.stroke = nil
