@@ -3,7 +3,7 @@
 local Util = require 'util'
 
 local Scene = require 'scene'
-local baize = require 'baize'
+local Baize = require 'baize'
 
 require 'colors'
 
@@ -36,7 +36,7 @@ end
 ---@param key string
 function Splash:keyPressed(key)
     print('Splash key pressed: ' .. key)
-	TransitionToScene(baize.new())
+	TransitionToScene(Baize.new())
 end
 
 function Splash:resize(w, h)
@@ -65,7 +65,7 @@ function Splash:update(dt)
 		self.alpha = math.max(0, 1 - (self.elapsed - self.hold) / self.fade)
 	end
 	if self.alpha <= 0.0 then
-		TransitionToScene(baize.new())
+		TransitionToScene(Baize.new())
 	end
 end
 

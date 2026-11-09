@@ -6,6 +6,7 @@ local Scene = require 'scene'
 local Stock = require 'stock'
 local Discard = require 'discard'
 local Hand = require 'hand'
+local Card = require 'card'
 local Util = require 'util'
 
 require 'colors'
@@ -19,11 +20,11 @@ function Baize.new()
 	setmetatable(o, Baize)
 
 	o.backgroundCanvas = nil
-	o.stock = Stock.new()
+	o.stock = Stock.new(o)
 	o.stock:fill()
 	o.stock:shuffle()
 
-	o.discard = Discard.new()
+	o.discard = Discard.new(o)
 	
 	o.computerCards = Hand.new(_G.SETTINGS.computerName)
 
@@ -64,12 +65,34 @@ end
 ---@param y number
 ---@return Card|nil
 function Baize:findCardAt(x, y)
-	local sources = {self.stock, self.discard, self.humanCards} -- not computerCards!
-
-	for j = #sources, 1, -1 do
-		local pile = sources[j]
-		for i = #pile.cards, 1, -1 do
-			local card = pile.cards[i]
+	-- only look at top card of stock and discard Piles
+	if #self.stock.cards > 0 then
+		local card = self.stock.cards[#self.stock.cards]
+		if not Card.isCard(card) then
+			log.error('Not a card at index', #self.stock.cards, 'of', self.stock)
+			return nil
+		end
+		if Util.inRect(x, y, card:getRect()) then
+			return card
+		end
+	end
+	if #self.discard.cards > 0 then
+		local card = self.discard.cards[#self.discard.cards]
+		if not Card.isCard(card) then
+			log.error('Not a card at index', #self.discard.cards, 'of', self.discard)
+			return nil
+		end
+		if Util.inRect(x, y, card:getRect()) then
+			return card
+		end
+	end
+	if #self.humanCards.cards > 0 then
+		for i = #self.humanCards.cards, 1, -1 do
+			local card = self.humanCards.cards[i]
+			if not Card.isCard(card) then
+				log.error('Not a card at index', i, 'of', self.humanCards)
+				return nil
+			end
 			if Util.inRect(x, y, card:getRect()) then
 				return card
 			end
@@ -117,24 +140,23 @@ function Baize:mousePressed(x, y, button, istouch, presses)
 		log.warn('mousePressed', button, 'already a stroke')
 		return
 	end
-	self.stroke = {
-		init = {x=x, y=y},
-	}
 	local card = self:findCardAt(x, y)
-	if card and not card:transitioning() then
-		-- when we start dragging, we remove the card from it's pile
-		local cidx = card.owner:indexOf(card)
-		assert(cidx)
-		table.remove(card.owner.cards, cidx)
-		self.stroke.object = card
-		self.stroke.objectIdx = cidx	-- so we can put it back where we found it
-		self.stroke.objectType = 'card'
-		card:startDrag()
-		love.mouse.setVisible(false)
-		log.info('mousePressed', button, 'card', card.textureId, 'dragStart', card.dragStart.x, card.dragStart.y)
-	else
-		log.info('mousePressed', button, 'no static card at', x, y)
+	if not card then
+		log.info('mousePressed', 'no card at', x, y)
+		return
 	end
+	if not card:static() then
+		log.warn('mousePressed', card, 'is not static')
+	end
+	-- when we start dragging, we leave the card in it's owning pile
+	self.stroke = {
+		init = {x = x, y = y},
+		object = card,
+		objectType = 'card',
+	}
+	card:startDrag()
+	love.mouse.setVisible(false)
+	-- log.info('mousePressed', 'card', 'dragStart', card.dragStart.x, card.dragStart.y)
 end
 
 ---@param x number
@@ -167,28 +189,32 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 	if self.stroke.objectType == 'card' then
 		local card = self.stroke.object
 		if card:wasDragged() then
-			log.info('mouseReleased', button, 'card', card.textureId, 'dragged to', card.x, card.y)
-		else
-			log.info('mouseReleased', button, 'card', card.textureId, 'not dragged')
-		end
-		card:stopDrag()
-		if math.abs(self.stroke.init.x - x) < 4 and math.abs(self.stroke.init.y - y) < 4 then
-			self:mouseTapped(x, y, button)	-- stroke is still valid, so we can call mouseTapped
-		else
-			-- see if card is from stock pile and is now over human hand
-			-- see if card is from discard pile and is now over human hand
-			-- (cannot move from anywhere to stock)
-			-- see if card is from human hand and is now over discard pile
-			-- see if card is from human hand and is now over human hand (reorder)
+			log.info('mouseReleased', card, 'dragged to', card.x, card.y)
 			local dst = self:largestIntersection(card)
 			if not dst then
-				table.insert(card.owner.cards, self.stroke.objectIdx, card)  -- put the card back in its pile
-				card.owner:fan()
+				card:cancelDrag()	-- animate card back to it's original position
 			else
-				card.owner:cardDragged(card, dst)
+				log.trace('drag from', card.owner, 'to', dst)
+				if card.owner == dst then
+					card:stopDrag()
+					card.owner:cardDragged(card)
+				else
+					-- dragging card to a different pile
+					card.owner:removeCard(card)
+					-- remove card from src pile (pile:pop() | table.remove() + fan())
+					-- insert card into dst pile (push() | table.insert())
+					dst:insertCard(card)
+					assert(card.owner==dst)
+					-- the only combinations allowed are
+					-- stock to human hand
+					-- discard to human hand
+					-- human hand to discard
+					card:stopDrag()
+				end
 			end
+		else
+			log.info('mouseReleased', card, 'not dragged')
 		end
-		-- Hand piles will have .playerName field
 	end
 	self.stroke = nil
 end
@@ -199,26 +225,35 @@ end
 function Baize:mouseTapped(x, y, button)
 	if self.stroke.objectType == 'card' then
 		local c = self.stroke.object
-		log.info('mouseTapped', button, 'card', c.textureId, 'at', c.x, c.y)
-		-- tapping on stock or discard signals human wants to move card to their hand
-		-- tapping on player hand signals human wants to move card to discard (cannot move to stock)
-		table.insert(c.owner.cards, self.stroke.objectIdx, c)
-		c.owner:fan()
+		-- log.info('mouseTapped on', c, 'at', c.x, c.y)
+		-- tapping on stock, move top card to human hand
+		-- tapping on discard, move top card to human hand
+		-- tapping on human hand, move card to discard pile
+		c.owner:tapped(c)
 	end
 end
 
 ---@param key string
 function Baize:keyPressed(key)
-    print("baize key pressed: " .. key)
+    -- log.info("baize key pressed: " .. key)
 	if key == 'escape' then
 		love.event.quit(0)
+	elseif key == 'd' then
+		local c = self.stock:pop()
+		if c then
+			self.discard:push(c)
+		end
 	elseif key == 's' then
 		self.humanCards:sort()
+	elseif key == 'p' then
+		log.info(self.computerCards, self.stock, self.discard, self.humanCards)
 	end
 end
 
+---@param w number
+---@param h number
 function Baize:resize(w, h)
-	print("Baize resized to: " .. w .. "x" .. h)
+	-- log.info("Baize resized to: " .. w .. "x" .. h)
 	self.backgroundCanvas = nil
 	for _, p in ipairs({self.stock, self.discard, self.computerCards, self.humanCards}) do
 		p:setPosition()

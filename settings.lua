@@ -17,6 +17,13 @@ _G.SETTINGS = {
 
     computerName = 'GinBot',
     humanName = 'Gilbert',
+
+    meldColors = {
+        [1] = {0.5, 1, 1, 0.5},
+        [2] = {1, 0.5, 1, 0.5},
+        [3] = {1, 1, 0.5, 0.5},
+        [4] = {0.5, 1, 0.5, 0.5},
+    },
 }
 
 _G.SETTINGS.Calculate = function()
@@ -25,13 +32,8 @@ _G.SETTINGS.Calculate = function()
 	local ww, wh, _ = love.window.getMode()
     -- _G.SETTINGS.cardHeight = wh / 4
     -- _G.SETTINGS.cardWidth = _G.SETTINGS.cardHeight / _G.SETTINGS.cardRatioPortrait
-    _G.SETTINGS.cardWidth = ww / 12
+    _G.SETTINGS.cardWidth = ww / 10
     _G.SETTINGS.cardHeight = _G.SETTINGS.cardWidth * _G.SETTINGS.cardRatioPortrait
     _G.SETTINGS.cardRoundness = _G.SETTINGS.cardWidth / 10
     _G.SETTINGS.cardRadius = _G.SETTINGS.cardWidth / _G.SETTINGS.cardRatioPortrait / _G.SETTINGS.cardRoundness
-
-    -- _G.SETTINGS.miniWidth = ww / 12 / 6
-    -- _G.SETTINGS.miniHeight = _G.SETTINGS.miniWidth * _G.SETTINGS.cardRatioPortrait
-    -- _G.SETTINGS.miniRoundness = _G.SETTINGS.miniWidth / 10
-    -- _G.SETTINGS.miniRadius = _G.SETTINGS.miniWidth / _G.SETTINGS.cardRatioPortrait / _G.SETTINGS.miniRoundness
 end

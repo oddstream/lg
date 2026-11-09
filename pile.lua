@@ -18,12 +18,15 @@ local Card = require 'card'
 ---@field peek function
 ---@field pop function
 ---@field push function
----@field cardDragged function(c:Card, dest:Pile)
+---@field cardDragged function(c:Card)
+---@field removeCard function(c:Card)
+---@field insertCard function(c:Card)
 ---@field cardTapped function(c:Card)
 ---@field fan function
 ---@field indexOf function(c:Card):integer|nil
 ---@field repositionCards function
 ---@field sort function
+---@field tapped function(c:Card)
 ---@field getRect function
 ---@field update function(dt_seconds:number)
 ---@field draw function()
@@ -36,6 +39,15 @@ function Pile:__tostring()
 	return string.format('pile(%d)', #self.cards)
 end
 
+function Pile:log()
+	local str = ''
+	for i, c in ipairs(self.cards) do
+		str = str .. string.format('%d) %s %d ', i, c, c.x)
+	end
+	log.info(str)
+end
+
+---@return Pile
 function Pile.new()
     local o = {x=0, y=0, cards={}}
     return setmetatable(o, Pile)
@@ -58,8 +70,7 @@ end
 ---@param c Card
 function Pile:push(c)
     assert(self.cards)
-    assert(c)
-    assert(type(c)=='table')
+    assert(Card.isCard(c))
 	table.insert(self.cards, c)
 	c.owner = self
 	c:transitionTo(self.x, self.y)
@@ -69,22 +80,31 @@ function Pile:getRect()
     return self.x, self.y, _G.SETTINGS.cardWidth, _G.SETTINGS.cardHeight
 end
 
----@param c Card, taken out of it's owning pile, but .owner still set
----@param dst Pile
-function Pile:cardDragged(c, dst)
-	assert(dst)
-	assert(dst.__index==Pile)
-	assert(c)
-	assert(type(c)=='table')
-	assert(c.__index==Card)
+---@param c Card, still in it's owning pile
+function Pile:cardDragged(c)
+	assert(Card.isCard(c))
+	log.info(self, c, 'dragging going on in base Pile class')
 	-- do nothing for now, but subclasses can override this to handle card being dragged over them
 end
 
----@param c Card, taken out of it's owning pile, but .owner still set
+---@param c Card, still in it's owning pile
+function Pile:removeCard(c)
+	-- default behaviour, pop, good for stock and discard piles
+	-- can be overriden by subclasses
+	assert(self:peek()==c)
+	self:pop()
+end
+
+---@param c Card
+function Pile:insertCard(c)
+	-- default behaviour, push, good for stock and discard piles
+	-- can be overriden by subclasses
+	self:push(c)
+end
+
+---@param c Card, still in it's owning pile
 function Pile:cardTapped(c)
-	assert(c)
-	assert(type(c)=='table')
-	assert(c.__index==Card)
+	assert(Card.isCard(c))
 	log.trace("Pile:cardTapped()", c)
 	c.owner:push(c)
 end
@@ -95,6 +115,11 @@ end
 
 function Pile:sort()
 	-- do nothing, cards are stacked on top of each other
+end
+
+---@param c Card
+function Pile:tapped(c)
+	-- do nothing, handled by sublasses
 end
 
 function Pile:indexOf(c)

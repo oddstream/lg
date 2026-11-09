@@ -186,15 +186,13 @@ local function createRegularFace(cardFaceTexture, ordFont, suitFont, suitFontSma
 	return canvas
 end
 
----@param width number width of a card
----@param height number height of a card
----@param radius number
 ---@return love.Canvas[] table of canvases, indexed by an ord+suit key
 ---@return love.Canvas canvas card back, same for all cards
 ---@return love.Canvas canvas card shadow, same for all cards
-function _G.cardTextureFactory(width, height, radius)
-	assert(width and width ~= 0)
-	assert(height and height ~= 0)
+function _G.cardTextureFactory()
+	local width = _G.SETTINGS.cardWidth
+	local height = _G.SETTINGS.cardHeight
+	local radius = _G.SETTINGS.cardRadius
 
 	-- turn off anti-aliasing to prevent fuzzy cards
 	-- https://love2d.org/wiki/FilterMode

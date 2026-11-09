@@ -2,8 +2,8 @@
 
 local log = require 'log'
 
-local Pile = require 'pile'
 local Card = require 'card'
+local Pile = require 'pile'
 
 ---@class (exact) Hand: Pile
 ---@field __index Hand
@@ -12,7 +12,7 @@ local Card = require 'card'
 ---@field new function
 ---@field setPosition function
 ---@field cardTapped function(c:Card)
----@field cardDragged function(c:Card, dest:Pile)
+---@field cardDragged function(c:Card)
 ---@field fan function
 ---@field sort function
 ---@field width function
@@ -29,8 +29,10 @@ function Hand:__tostring()
 	return string.format('hand(%s)(%d)', self.playerName, #self.cards)
 end
 
+---@param playerName string
 ---@return Hand
 function Hand.new(playerName)
+    ---@class (exact) Hand: Pile
     local o = Pile.new()
     o.playerName = playerName
     return setmetatable(o, Hand)
@@ -50,44 +52,69 @@ end
 
 ---@param c Card, taken out of it's owning pile, but .owner still set
 function Hand:cardTapped(c)
-	assert(c)
-	assert(type(c)=='table')
-	assert(c.__index==Card)
+	assert(Card.isCard)
     assert(c.owner.playerName)
 	log.trace("Hand:cardTapped()", c)
 	c.owner:push(c)
     c.owner:fan()
 end
 
----@param c Card, taken out of it's owning pile, but .owner still set
----@param dest Pile
-function Hand:cardDragged(c, dest)
-    if not dest then 
-        table.insert(c.owner.cards, c)  -- put the card back in its pile
-        c.owner:fan()
-        return
-    end
-    assert(c)
-    assert(type(c)=='table')
-    assert(c.__index==Card)
-    assert(c.owner.playerName)
-    log.trace("Hand:cardDragged()", c)
+---@param c Card, has been dragged to a new x,y position in this hand
+function Hand:cardDragged(c)
+    assert(Card.isCard(c))
+    log.trace("cardDragged()", c, c.x, c.y)
 
-    -- TODO use x,y to verify we are over the hand pile, or (TODO) discard pile
-    local left, right = 1, #c.owner.cards + 1
-
-    -- Find the first position whose x is >= c.x
-    while left < right do
-        local mid = math.floor((left + right) / 2)
-        if c.owner.cards[mid].x < c.x then
-            left = mid + 1
-        else
-            right = mid
+    local function isSorted()
+        for i = 2, #self.cards do
+            if self.cards[i].x < self.cards[i - 1].x then
+                return false
+            end
         end
+        return true
     end
 
-    table.insert(c.owner.cards, left, c)
-    c.owner:fan()
+    -- we can remove c from this table because we
+    -- only need it's x position, not it's index
+    local idx = self:indexOf(c)
+    assert(idx)
+    table.remove(self.cards, idx)
+    assert(isSorted())
+
+    -- reinsert c after cards with a smaller value for x
+    -- classic 'insert into sorted list' problem
+    -- no need for binary search as list is always 10 items long
+    local i = 1
+    while i <= #self.cards and self.cards[i].x <= c.x do
+        i = i + 1
+    end
+    table.insert(self.cards, i, c)
+    c.owner = self
+    -- log.info('inserted', c, 'at', i)
+    -- assert(isSorted())
+    self:fan()
+end
+
+---@param c Card
+function Hand:removeCard(c)
+    local idx = self:indexOf(c)
+    assert(idx)
+    table.remove(self.cards, idx)
+    self:fan()
+end
+
+---@param c Card
+function Hand:insertCard(c)
+    -- reinsert c after cards with a smaller value for x
+    -- classic 'insert into sorted list' problem
+    -- no need for binary search as list is always 10 items long
+    local i = 1
+    while i <= #self.cards and self.cards[i].x <= c.x do
+        i = i + 1
+    end
+    table.insert(self.cards, i, c)
+    c.owner = self
+    -- log.info('inserted', c, 'at', i)
+    self:fan()
 end
 
 ---@return number
@@ -300,6 +327,22 @@ local function cardsToMelds(cards)
     return resultMelds, deadwood, deadwoodValue
 end
 
+function Hand:meldsToCards(melds, deadwood)
+    local result = {}
+    for i, meld in ipairs(melds) do
+        for _, c in ipairs(meld) do
+            result[#result + 1] = c
+            c.meld = i
+        end
+    end
+    for i, c in ipairs(deadwood) do
+        result[#result + 1] = c
+        c.meld = 0
+    end
+    self.cards = result
+    self:fan()
+end
+
 function Hand:sort()
     table.sort(self.cards, function(a, b) return a.ord < b.ord end)
     self:fan()
@@ -311,6 +354,7 @@ function Hand:sort()
         end
     end
     log.trace(#deadwood, 'deadwood cards, total value', deadwoodValue)
+    self:meldsToCards(melds, deadwood)
 end
 
 -- update, draw handled by Pile

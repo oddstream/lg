@@ -11,6 +11,7 @@ local Util = require 'util'
 ---@field x integer
 ---@field y integer
 ---@field prone boolean
+---@field meld number
 ---@field flipWidth number
 ---@field flipDirection number
 ---@field owner Pile
@@ -21,6 +22,7 @@ local Util = require 'util'
 ---@field lerpStartTime number|nil
 ---@field __index Card
 ---@field __tostring function
+---@field isCard function
 ---@field value function
 ---@field new function
 ---@field setPosition function
@@ -51,6 +53,12 @@ Card.__index = Card
 
 function Card:__tostring()
 	return self.textureId
+end
+
+---@param c Card|nil
+---@return boolean
+function Card.isCard(c)
+	return c ~= nil and type(c)=='table' and c.__index==Card and type(c.suit)=='string' and type(c.ord)=='number' and type(c.prone)=='boolean'
 end
 
 function Card:value()
@@ -195,6 +203,7 @@ end
 
 function Card:startDrag()
 	if self:transitioning() then
+		log.warn('request to drag a transitioning card', self)
 		self.dragStart = self.dst
 		self:stopTransition()
 	else
@@ -327,6 +336,11 @@ function Card:draw()
 		love.graphics.draw(img, x, y)
 		-- love.graphics.setColor(1,1,1,1)
 	else
+		love.graphics.draw(img, x, y)
+	end
+
+	if self.meld and self.meld > 0 then
+		love.graphics.setColor(_G.SETTINGS.meldColors[self.meld])
 		love.graphics.draw(img, x, y)
 	end
 end

@@ -11,12 +11,22 @@ Cribbage
 Noddy
 
 # NEXT
-Mini displays for melds and deadwood (see https://www.gin-rummy-online.com/)
+FSM object
+Permissions/Okay object (let the user do a thing, check if it's okay, and undo it if not)
+No UI, so _Global objects
 
-full card 40 wide, 54 high
-mini card  7 wide,  9 high
-... mini cards approx 1/6 size of full cards
-... ordinal centered in top third, suit centered in bottom two thirds
+gather() cards from all piles into stock
+shuffle stock()
+deal ten cards to roboto and human()
+deal one card from stock to discard()
+
+Mini manual commands:
+    (p)ile info
+    (s)ort hand
+    move card from stock to (d)iscard
+    move/drag top card from stock to hand
+    move/drag top card from discard to hand
+    drag card from hand to discard
 
 ### Card movement
 Stock card can be dragged to the human hand (when allowed by FSM, transition back if not) (flip)
@@ -28,6 +38,7 @@ Human hand card can only be dragged (a) left and right, or (b) up to the discard
 -- check mouseTapped (because mouseReleased happens afterwards, at present)
 
 No baize dragging, no card spinning, YAGNI
+No display of mini cards for melds+deadwood; not realistic, screen clutter
 
 ## LAYERS
 

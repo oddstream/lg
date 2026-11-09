@@ -1,5 +1,7 @@
 -- discard.lua
 
+local log = require 'log'
+
 local Pile = require 'pile'
 
 ---@class (exact) Discard: Pile
@@ -19,8 +21,14 @@ end
 
 ---@return Discard
 function Discard.new()
+    ---@class (exact) Discard: Pile
     local o = Pile.new()
     return setmetatable(o, Discard)
+end
+
+function Discard:push(c)
+    log.info('push ', c, ' to ', self)
+    Pile.push(self, c)
 end
 
 function Discard:setPosition()

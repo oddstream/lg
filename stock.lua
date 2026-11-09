@@ -24,6 +24,7 @@ end
 
 ---@return Stock
 function Stock.new()
+    ---@class (exact) Stock: Pile
     local o = Pile.new()
     return setmetatable(o, Stock)
 end
@@ -48,6 +49,26 @@ function Stock:shuffle()
 			self.cards[i], self.cards[j] = self.cards[j], self.cards[i]
 		end
 	end
+end
+
+---@return Card
+function Stock:pop()
+    local c = Pile.pop(self)
+    if c then
+        c:flipUp()
+    end
+    return c
+end
+
+---@param c Card
+function Stock:push(c)
+    Pile.push(self, c)
+    c:flipDown()
+end
+
+---@param c Card
+function Stock:tapped(c)
+    -- TODO
 end
 
 function Stock:setPosition()

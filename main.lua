@@ -41,7 +41,7 @@ function love.load(args)
 	stage = scenes.new()
 
  	_G.SETTINGS.Calculate()
-  _G.cardFaceTextures, _G.cardBackTexture, _G.cardShadowTexture = cardTextureFactory(_G.SETTINGS.cardWidth, _G.SETTINGS.cardHeight, _G.SETTINGS.cardRadius)
+  _G.cardFaceTextures, _G.cardBackTexture, _G.cardShadowTexture = cardTextureFactory()
   assert(_G.cardFaceTextures)
   assert(type(_G.cardFaceTextures) == 'table')
   assert(_G.cardFaceTextures[string.format('%02u%s', 1, '♠')])
@@ -82,7 +82,7 @@ end
 
 function love.resize(w, h)
   _G.SETTINGS.Calculate()
-  _G.cardFaceTextures, _G.cardBackTexture, _G.cardShadowTexture = cardTextureFactory(_G.SETTINGS.cardWidth, _G.SETTINGS.cardHeight, _G.SETTINGS.cardRadius)
+  _G.cardFaceTextures, _G.cardBackTexture, _G.cardShadowTexture = cardTextureFactory()
   stage:resize(w, h)
 end
 
