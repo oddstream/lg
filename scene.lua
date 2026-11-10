@@ -25,12 +25,12 @@ function Scene.new(name)
 end
 
 function Scene:load()
-    print("Scene " .. self.name .. " loaded")
+    -- print("Scene " .. self.name .. " loaded")
     -- override in subclass
 end
 
 function Scene:unload()
-    print("Scene " .. self.name .. " unloaded")
+    -- print("Scene " .. self.name .. " unloaded")
     -- override in subclass
 end
 
@@ -70,7 +70,7 @@ end
 ---@param w number
 ---@param h number
 function Scene:resize(w, h)
-    print("Scene " .. self.name .. " resized to: " .. w .. "x" .. h)
+    -- print("Scene " .. self.name .. " resized to: " .. w .. "x" .. h)
     -- override in subclass
 end
 

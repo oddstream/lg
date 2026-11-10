@@ -14,7 +14,6 @@ local Card = require 'card'
 ---@field y integer
 ---@field cards Card[]
 ---@field new function
----@field shuffle function
 ---@field peek function
 ---@field pop function
 ---@field push function
@@ -48,8 +47,7 @@ end
 
 ---@return Pile
 function Pile.new()
-    local o = {x=0, y=0, cards={}}
-    return setmetatable(o, Pile)
+    return setmetatable({x=0, y=0, cards={}}, Pile)
 end
 
 ---@return Card
@@ -137,6 +135,9 @@ function Pile:update(dt_seconds)
 end
 
 function Pile:draw()
+	if #self.cards == 0 then
+		return
+	end
 	if _G.SETTINGS.debug then
 		love.graphics.setColor(1, 1, 1, 0.5)
 		love.graphics.setLineWidth(1)

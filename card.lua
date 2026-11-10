@@ -325,16 +325,12 @@ function Card:draw()
 		love.graphics.draw(img, x, y)
 	elseif self:dragging() then
 		local xoffset, yoffset = 2, 2
-		-- local xoffset = b.cardWidth / 66
-		-- local yoffset = b.cardHeight / 66
 		love.graphics.draw(_G.cardShadowTexture, x + xoffset, y + yoffset)
 		-- this looks intuitively better than "lifting" the card with offset * 2
 		-- even though "lifting" it (moving it up/left towards the light source) would be more "correct"
 		x = x - xoffset / 2
 		y = y - yoffset / 2
-		-- love.graphics.setColor(1, 0.95, 1, 1)
 		love.graphics.draw(img, x, y)
-		-- love.graphics.setColor(1,1,1,1)
 	else
 		love.graphics.draw(img, x, y)
 	end
@@ -342,6 +338,7 @@ function Card:draw()
 	if self.meld and self.meld > 0 then
 		love.graphics.setColor(_G.SETTINGS.meldColors[self.meld])
 		love.graphics.draw(img, x, y)
+		love.graphics.setColor(1,1,1,1)	-- otherwise background flashes
 	end
 end
 

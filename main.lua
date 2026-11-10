@@ -30,7 +30,7 @@ local stage
 
 function TransitionToScene(scene)
 	assert(scene and type(scene) == "table" and type(scene.name) == "string", "Invalid scene object")
-	print("Transitioning to scene: " .. scene.name)
+	-- print("Transitioning to scene: " .. scene.name)
 	stage:push(scene)
 end
 

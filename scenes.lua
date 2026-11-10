@@ -22,7 +22,7 @@ end
 function Scenes:push(scene)
     assert(scene, "Cannot push nil scene")
     assert(type(scene) == "table" and type(scene.name) == "string", "Invalid scene object")
-    print("Pushing scene: " .. scene.name)
+    -- print("Pushing scene: " .. scene.name)
 
     if self.stack[1] then
         self.stack[1]:unload()
@@ -32,7 +32,7 @@ function Scenes:push(scene)
 end
 
 function Scenes:pop()
-    print("Popping scene")
+    -- print("Popping scene")
     if self.stack[1] then
         self.stack[1]:unload()
         table.remove(self.stack, 1)
@@ -77,7 +77,7 @@ end
 
 ---@param key string
 function Scenes:keyPressed(key)
-    print("Scenes key pressed: " .. key)
+    -- print("Scenes key pressed: " .. key)
     if self.stack[1] then
         self.stack[1]:keyPressed(key)
     end
@@ -86,7 +86,7 @@ end
 ---@param w number
 ---@param h number
 function Scenes:resize(w, h)
-    print("Scenes resized to: " .. w .. "x" .. h)
+    -- print("Scenes resized to: " .. w .. "x" .. h)
     if self.stack[1] then
         self.stack[1]:resize(w, h)
     end

@@ -35,12 +35,12 @@ end
 
 ---@param key string
 function Splash:keyPressed(key)
-    print('Splash key pressed: ' .. key)
+    -- print('Splash key pressed: ' .. key)
 	TransitionToScene(Baize.new())
 end
 
 function Splash:resize(w, h)
-	print("Splash resized to: " .. w .. "x" .. h)
+	-- print("Splash resized to: " .. w .. "x" .. h)
 	self.backgroundCanvas = nil
 end
 

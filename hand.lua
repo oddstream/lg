@@ -9,6 +9,10 @@ local Pile = require 'pile'
 ---@field __index Hand
 ---@field __tostring function
 ---@field playerName string
+---@field melds Card[][]
+---@field deadwood Card[]
+---@field deadwoodValue number
+---@field deadwoodFont love.Font
 ---@field new function
 ---@field setPosition function
 ---@field cardDragged function(c:Card)
@@ -46,7 +50,7 @@ function Hand:push(c)
     else
         c:flipDown()
     end
-    log.trace("Hand:push()", self, c, c.owner)
+    -- log.trace("Hand:push()", self, c, c.owner)
 end
 
 ---@param c Card, has been dragged to a new x,y position in this hand
@@ -89,7 +93,7 @@ function Hand:removeCard(c)
     local idx = self:indexOf(c)
     assert(idx)
     table.remove(self.cards, idx)
-    self:fan()
+    self:sort()
 end
 
 ---@param c Card
@@ -104,7 +108,7 @@ function Hand:insertCard(c)
     table.insert(self.cards, i, c)
     c.owner = self
     -- log.info('inserted', c, 'at', i)
-    self:fan()
+    self:sort()
 end
 
 ---@return number
@@ -135,6 +139,7 @@ function Hand:setPosition()
     end
     -- log.trace("Hand:setPosition()", self, self.x, self.y)
     self:repositionCards()
+    self.deadwoodFont = nil
 end
 
 function Hand:fan()
@@ -317,36 +322,64 @@ local function cardsToMelds(cards)
     return resultMelds, deadwood, deadwoodValue
 end
 
-function Hand:meldsToCards(melds, deadwood)
+function Hand:sort()
+    table.sort(self.cards, function(a, b) return a.ord < b.ord end)
+    self.melds, self.deadwood, self.deadwoodValue = cardsToMelds(self.cards)
+
+    if _G.SETTINGS.debug then
+        log.trace(#self.melds, 'melds')
+        for _, meld in ipairs(self.melds) do
+            for _, c in ipairs(meld) do
+                log.trace(c)
+            end
+        end
+        log.trace(#self.deadwood, 'deadwood cards, total value', self.deadwoodValue)
+    end
+
+    -- replace cards with melds, in order
     local result = {}
-    for i, meld in ipairs(melds) do
+    for i, meld in ipairs(self.melds) do
         for _, c in ipairs(meld) do
             result[#result + 1] = c
             c.meld = i
         end
     end
-    for i, c in ipairs(deadwood) do
+    for _, c in ipairs(self.deadwood) do
         result[#result + 1] = c
         c.meld = 0
     end
     self.cards = result
-    self:fan()
-end
 
-function Hand:sort()
-    table.sort(self.cards, function(a, b) return a.ord < b.ord end)
     self:fan()
-    local melds, deadwood, deadwoodValue = cardsToMelds(self.cards)
-    log.trace(#melds, 'melds')
-    for _, meld in ipairs(melds) do
-        for _, c in ipairs(meld) do
-            log.trace(c)
-        end
-    end
-    log.trace(#deadwood, 'deadwood cards, total value', deadwoodValue)
-    self:meldsToCards(melds, deadwood)
 end
 
 -- update, draw handled by Pile
+
+function Hand:draw()
+
+    local function printCentered(text, x, y)
+        love.graphics.print(text,
+            x - self.deadwoodFont:getWidth(text) / 2,
+            y - self.deadwoodFont:getHeight() / 2)
+    end
+
+    Pile.draw(self)
+    if not self:peek() then
+        return
+    end
+    if not self.deadwoodValue or self.deadwoodValue == 0 then
+        return
+    end
+    if not self.deadwoodFont then
+        self.deadwoodFont = love.graphics.newFont(_G.ORD_FONT, _G.SETTINGS.cardWidth / 2)
+    end
+    love.graphics.setFont(self.deadwoodFont)
+    local cx, cy = self:peek():getPosition()
+    printCentered(
+        string.format('%s', self.deadwoodValue),
+        cx + _G.SETTINGS.cardWidth * 1.5,
+        cy + _G.SETTINGS.cardHeight * 0.5
+    )
+end
 
 return Hand

@@ -78,7 +78,7 @@ function Stock:setPosition()
 
     self.x = self.x - (_G.SETTINGS.cardWidth * 0.75)
     self:repositionCards()
-    log.trace("Stock:setPosition()", self, self.x, self.y)
+    -- log.trace("Stock:setPosition()", self, self.x, self.y)
 end
 
 -- update, draw handled by Pile

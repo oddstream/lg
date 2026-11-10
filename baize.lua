@@ -8,6 +8,7 @@ local Discard = require 'discard'
 local Hand = require 'hand'
 local Card = require 'card'
 local Util = require 'util'
+local Jinn = require 'jinn'
 
 require 'colors'
 
@@ -17,24 +18,24 @@ setmetatable(Baize, {__index = Scene})
 
 function Baize.new()
     local o = Scene.new('baize')
-	setmetatable(o, Baize)
 
 	o.backgroundCanvas = nil
 	o.stock = Stock.new()
 	o.stock:fill()
 	o.stock:shuffle()
-
+	o.stock:setPosition() -- otherwise it's at 0,0
+	log.info('created', #o.stock.cards, 'cards')
 	o.discard = Discard.new()
 	
 	o.computerCards = Hand.new(_G.SETTINGS.computerName)
 
 	o.humanCards = Hand.new(_G.SETTINGS.humanName)
 
-	o:deal()
-
 	o:resize(love.graphics.getWidth(), love.graphics.getHeight())
 
-	return o
+	_G.Gin = Jinn.new(o)
+
+	return setmetatable(o, Baize)
 end
 
 function Baize:load()
@@ -47,18 +48,27 @@ function Baize:unload()
 end
 
 function Baize:deal()
-	for i = 1, 10 do
-		local c = self.stock:pop()
-		if c then
-			self.humanCards:push(c)
+	-- recall all cards from piles
+	log.info(#self.stock.cards, 'cards in stock')
+	for _, p in ipairs({self.computerCards, self.discard, self.humanCards}) do
+		log.info('recall', #p.cards, 'from', p)
+		while #p.cards > 0 do
+			self.stock:push(p:pop())
 		end
 	end
+	log.info(#self.stock.cards, 'cards in stock')
+	assert(#self.stock.cards==52)
+	-- shuffle stock
+	self.stock:shuffle()
+	-- deal
 	for i = 1, 10 do
-		local c = self.stock:pop()
-		if c then
-			self.computerCards:push(c)
-		end
+		self.humanCards:push(self.stock:pop())
+		self.computerCards:push(self.stock:pop())
 	end
+	self.discard:push(self.stock:pop())
+	assert(#self.stock.cards==52-10-10-1)
+	self:resize(love.graphics.getWidth(), love.graphics.getHeight())
+	self.humanCards:sort()
 end
 
 ---@param x number
@@ -197,6 +207,7 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 				card:cancelDrag()	-- animate card back to it's original position
 			else
 				log.trace('drag from', card.owner, 'to', dst)
+			-- TODO check with FSM that move is legal
 				if card.owner == dst then
 					card:stopDrag()
 					card.owner:cardDragged(card)
@@ -215,21 +226,24 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 			end
 		else-- card was not dragged, so we'll call that a tap
 			log.info('mouseReleased', card, 'not dragged')
-			if card.owner == self.stock then
-				card:stopDrag()
-				self.stock:pop()
-				self.humanCards:push(card)
-				self.humanCards:fan()
-			elseif card.owner == self.discard then
-				card:stopDrag()
-				self.discard:pop()
-				self.humanCards:push(card)
-				self.humanCards:fan()
+			if card.owner == self.stock or card.owner == self.discard then
+				if _G.Gin:isAllowed() then
+					card:stopDrag()
+					card.owner:pop()
+					self.humanCards:push(card)
+					self.humanCards:sort()
+				else
+					card:cancelDrag()
+				end
 			elseif card.owner == self.humanCards then
-				card:stopDrag()
-				self.humanCards:removeCard(card)
-				self.humanCards:fan()
-				self.discard:push(card)
+				if _G.Gin:isAllowed() then
+					card:stopDrag()
+					self.humanCards:removeCard(card)
+					self.humanCards:sort()
+					self.discard:push(card)
+				else
+					card:cancelDrag()
+				end
 			else
 				card:cancelDrag()
 			end
@@ -258,10 +272,7 @@ function Baize:keyPressed(key)
 	if key == 'escape' then
 		love.event.quit(0)
 	elseif key == 'd' then
-		local c = self.stock:pop()
-		if c then
-			self.discard:push(c)
-		end
+		self:deal()
 	elseif key == 's' then
 		self.humanCards:sort()
 	elseif key == 'p' then
