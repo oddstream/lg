@@ -53,23 +53,23 @@ end
 
 ---@return Card
 function Stock:pop()
-    local c = Pile.pop(self)
-    if c then
-        c:flipUp()
-    end
-    return c
+    return Pile.pop(self)
+    -- up to the receiver to flip card up or down
 end
 
 ---@param c Card
 function Stock:push(c)
+    c:flipDown()	-- receiver determines flip up or down
     Pile.push(self, c)
-    c:flipDown()
+    c.cannotDiscard = false
 end
 
+--[[
 ---@param c Card
 function Stock:tapped(c)
-    -- TODO
+    -- TODO don't think we need this function
 end
+]]
 
 function Stock:setPosition()
 	local width, height, _ = love.window.getMode()

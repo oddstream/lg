@@ -12,6 +12,7 @@ local Util = require 'util'
 ---@field y integer
 ---@field prone boolean
 ---@field meld number
+---@field cannotDiscard boolean (when true, card cannot be discarded)
 ---@field flipWidth number
 ---@field flipDirection number
 ---@field owner Pile
@@ -47,12 +48,11 @@ local Util = require 'util'
 ---@field update function(dt_seconds:number)
 ---@field draw function()
 
-local Card = {
-}
+local Card = {}
 Card.__index = Card
 
 function Card:__tostring()
-	return self.textureId
+	return self.textureId .. tostring(self.owner)
 end
 
 ---@param c Card|nil
@@ -332,13 +332,17 @@ function Card:draw()
 		y = y - yoffset / 2
 		love.graphics.draw(img, x, y)
 	else
-		love.graphics.draw(img, x, y)
-	end
-
-	if self.meld and self.meld > 0 then
-		love.graphics.setColor(_G.SETTINGS.meldColors[self.meld])
-		love.graphics.draw(img, x, y)
-		love.graphics.setColor(1,1,1,1)	-- otherwise background flashes
+		if self.cannotDiscard == true then
+			love.graphics.setColor(0.5,0.5,0.5,0.5)
+			love.graphics.draw(img, x, y)
+			love.graphics.setColor(1,1,1,1)	-- otherwise background flashes
+		elseif self.meld and self.meld > 0 then
+			love.graphics.setColor(_G.SETTINGS.meldColors[self.meld])
+			love.graphics.draw(img, x, y)
+			love.graphics.setColor(1,1,1,1)	-- otherwise background flashes
+		else
+			love.graphics.draw(img, x, y)
+		end
 	end
 end
 

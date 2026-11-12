@@ -17,7 +17,7 @@ Baize.__index = Baize
 setmetatable(Baize, {__index = Scene})
 
 function Baize.new()
-    local o = Scene.new('baize')
+	local o = Scene.new('baize')
 
 	o.backgroundCanvas = nil
 	o.stock = Stock.new()
@@ -26,13 +26,14 @@ function Baize.new()
 	o.stock:setPosition() -- otherwise it's at 0,0
 	log.info('created', #o.stock.cards, 'cards')
 	o.discard = Discard.new()
-	
-	o.computerCards = Hand.new(_G.SETTINGS.computerName)
 
-	o.humanCards = Hand.new(_G.SETTINGS.humanName)
+	o.botHand = Hand.new(_G.SETTINGS.botName)
+
+	o.humanHand = Hand.new(_G.SETTINGS.humanName)
 
 	o:resize(love.graphics.getWidth(), love.graphics.getHeight())
 
+	o.elapsed = 0.0	-- count down Jinn action
 	_G.Gin = Jinn.new(o)
 
 	return setmetatable(o, Baize)
@@ -43,14 +44,19 @@ function Baize:load()
 end
 
 function Baize:unload()
-    print "baize unloaded"
+	print "baize unloaded"
 	self.backgroundCanvas = nil
 end
 
 function Baize:deal()
+	-- The dealer deals ten cards to each player one at a time
+	-- starting with their opponent, and then places the next card
+	-- in the deck face up. This begins the discard pile. The face
+	-- down pile is known as the stock pile.
+
 	-- recall all cards from piles
 	log.info(#self.stock.cards, 'cards in stock')
-	for _, p in ipairs({self.computerCards, self.discard, self.humanCards}) do
+	for _, p in ipairs({self.botHand, self.discard, self.humanHand}) do
 		log.info('recall', #p.cards, 'from', p)
 		while #p.cards > 0 do
 			self.stock:push(p:pop())
@@ -62,13 +68,13 @@ function Baize:deal()
 	self.stock:shuffle()
 	-- deal
 	for i = 1, 10 do
-		self.humanCards:push(self.stock:pop())
-		self.computerCards:push(self.stock:pop())
+		self.humanHand:push(self.stock:pop())
+		self.botHand:push(self.stock:pop())
 	end
 	self.discard:push(self.stock:pop())
-	assert(#self.stock.cards==52-10-10-1)
+	assert(#self.stock.cards == 52 - 10 - 10 - 1)
+
 	self:resize(love.graphics.getWidth(), love.graphics.getHeight())
-	self.humanCards:sort()
 end
 
 ---@param x number
@@ -96,11 +102,11 @@ function Baize:findCardAt(x, y)
 			return card
 		end
 	end
-	if #self.humanCards.cards > 0 then
-		for i = #self.humanCards.cards, 1, -1 do
-			local card = self.humanCards.cards[i]
+	if #self.humanHand.cards > 0 then
+		for i = #self.humanHand.cards, 1, -1 do
+			local card = self.humanHand.cards[i]
 			if not Card.isCard(card) then
-				log.error('Not a card at index', i, 'of', self.humanCards)
+				log.error('Not a card at index', i, 'of', self.humanHand)
 				return nil
 			end
 			if Util.inRect(x, y, card:getRect()) then
@@ -115,7 +121,7 @@ end
 ---@param y number
 ---@return Pile|nil
 function Baize:findPileAt(x, y)
-	for _, pile in ipairs({self.humanCards, self.discard}) do
+	for _, pile in ipairs({self.humanHand, self.discard}) do
 		if Util.inRect(x, y, pile:getRect()) then
 			return pile
 		end
@@ -129,7 +135,7 @@ function Baize:largestIntersection(c)
 	local largestArea = 0
 	local pile
 	local cx, cy, cw, ch = c:getRect()
-	for _, p in ipairs({self.discard, self.humanCards}) do
+	for _, p in ipairs({self.discard, self.humanHand}) do
 		local px, py, pw, ph = p:getRect()
 		local area = Util.overlapArea(cx, cy, cw, ch, px, py, pw, ph)
 		if area > largestArea then
@@ -207,40 +213,52 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 				card:cancelDrag()	-- animate card back to it's original position
 			else
 				log.trace('drag from', card.owner, 'to', dst)
-			-- TODO check with FSM that move is legal
 				if card.owner == dst then
 					card:stopDrag()
 					card.owner:cardDragged(card)
 				else-- dragging card to a different pile
-					-- remove card from src pile (pile:pop() | table.remove() + fan())
-					card.owner:removeCard(card)
-					-- insert card into dst pile (push() | table.insert())
-					dst:insertCard(card)
-					assert(card.owner==dst)
-					-- the only combinations allowed are
-					-- stock to human hand
-					-- discard to human hand
-					-- human hand to discard
-					card:stopDrag()
+					if _G.Gin:isAllowed(card, card.owner, dst) then
+						local from, to = card.owner, dst
+						-- remove card from src pile (pile:pop() | table.remove() + fan())
+						card.owner:removeCard(card)
+						-- insert card into dst pile (push() | table.insert())
+						dst:insertCard(card)
+						assert(card.owner==dst)
+						-- the only combinations allowed are
+						-- stock to human hand
+						-- discard to human hand
+						-- human hand to discard
+						card:stopDrag()
+						_G.Gin:notifyCardMove(card, from, to)
+					end
 				end
 			end
 		else-- card was not dragged, so we'll call that a tap
-			log.info('mouseReleased', card, 'not dragged')
-			if card.owner == self.stock or card.owner == self.discard then
-				if _G.Gin:isAllowed() then
+			log.info('mouseReleased', card, 'tapped (not dragged)')
+			if card.owner == self.stock then
+				if _G.Gin:isAllowed(card, self.stock, self.humanHand) then
 					card:stopDrag()
-					card.owner:pop()
-					self.humanCards:push(card)
-					self.humanCards:sort()
+					self.stock:pop()	-- .owner is now nil
+					self.humanHand:push(card)
+					_G.Gin:notifyCardMove(card, self.stock, self.humanHand)
 				else
 					card:cancelDrag()
 				end
-			elseif card.owner == self.humanCards then
-				if _G.Gin:isAllowed() then
+			elseif card.owner == self.discard then
+				if _G.Gin:isAllowed(card, self.discard, self.humanHand) then
 					card:stopDrag()
-					self.humanCards:removeCard(card)
-					self.humanCards:sort()
+					self.discard:pop()
+					self.humanHand:push(card)
+					_G.Gin:notifyCardMove(card, self.discard, self.humanHand)
+				else
+					card:cancelDrag()
+				end
+			elseif card.owner == self.humanHand then
+				if _G.Gin:isAllowed(card, self.humanHand, self.discard) then
+					card:stopDrag()
+					self.humanHand:removeCard(card)
 					self.discard:push(card)
+					_G.Gin:notifyCardMove(card, self.humanHand, self.discard)
 				else
 					card:cancelDrag()
 				end
@@ -252,6 +270,7 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 	self.stroke = nil
 end
 
+--[[
 ---@param x number
 ---@param y number
 ---@param button number
@@ -265,18 +284,19 @@ function Baize:mouseTapped(x, y, button)
 		c.owner:tapped(c)
 	end
 end
+]]
 
 ---@param key string
 function Baize:keyPressed(key)
-    -- log.info("baize key pressed: " .. key)
+	-- log.info("baize key pressed: " .. key)
 	if key == 'escape' then
 		love.event.quit(0)
 	elseif key == 'd' then
 		self:deal()
 	elseif key == 's' then
-		self.humanCards:sort()
+		self.humanHand:sort()
 	elseif key == 'p' then
-		log.info(self.computerCards, self.stock, self.discard, self.humanCards)
+		log.info(self.botHand, self.stock, self.discard, self.humanHand)
 	end
 end
 
@@ -285,15 +305,16 @@ end
 function Baize:resize(w, h)
 	-- log.info("Baize resized to: " .. w .. "x" .. h)
 	self.backgroundCanvas = nil
-	for _, p in ipairs({self.stock, self.discard, self.computerCards, self.humanCards}) do
+	for _, p in ipairs({self.stock, self.discard, self.botHand, self.humanHand}) do
 		p:setPosition()
 		p:fan()
 	end
+	self.debugFont = nil
 end
 
 ---@param dt_seconds number
 function Baize:update(dt_seconds)
-	local sources = {self.stock, self.discard, self.computerCards, self.humanCards}
+	local sources = {self.stock, self.discard, self.botHand, self.humanHand}
 	for _, src in ipairs(sources) do
 		src:update(dt_seconds)
 	end
@@ -301,6 +322,12 @@ function Baize:update(dt_seconds)
 		local card = self.stroke.object
 		card:update(dt_seconds)
 	end
+	self.elapsed = self.elapsed + dt_seconds
+	if self.elapsed > 2.0 then
+		_G.Gin:action()
+		self.elapsed = 0.0
+	end
+
 end
 
 function Baize:draw()
@@ -309,7 +336,7 @@ function Baize:draw()
 	end
 	love.graphics.draw(self.backgroundCanvas, 0, 0)
 
-	local sources = {self.stock, self.discard, self.computerCards, self.humanCards}
+	local sources = {self.stock, self.discard, self.botHand, self.humanHand}
 
 	for _, p in ipairs(sources) do
 		p:draw()
@@ -344,9 +371,21 @@ function Baize:draw()
 		end
 	end
 
-	if self.stroke and self.stroke.objectType == 'card' then
-		local card = self.stroke.object
-		card:draw()
+	-- used to need this when card.owner was removed when dragging started
+	-- if self.stroke and self.stroke.objectType == 'card' then
+	-- 	local card = self.stroke.object
+	-- 	card:draw()
+	-- end
+
+	if _G.SETTINGS.debug then
+		if not self.debugFont then
+			self.debugFont = love.graphics.newFont(_G.ORD_FONT, _G.SETTINGS.cardWidth / 4)
+		end
+		local w, h, _ = love.window.getMode()
+		love.graphics.setFont(self.debugFont)
+		love.graphics.print(_G.Gin.state,
+			(w / 2) - self.debugFont:getWidth(_G.Gin.state) / 2,
+			h - self.debugFont:getHeight())
 	end
 end
 

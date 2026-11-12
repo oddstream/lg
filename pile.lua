@@ -73,6 +73,25 @@ function Pile:push(c)
 	c:transitionTo(self.x, self.y)
 end
 
+---@param i integer|string
+---@return Card
+function Pile:remove(i)
+	local card
+    if type(i) == 'number' then
+        card = table.remove(self.cards, i)
+    elseif type(i) == 'string' then
+        for j, c in ipairs(self.cards) do
+            if c.textureId == i then
+                card = table.remove(self.cards, j)
+            end
+        end
+    else
+        assert(false, 'remove argument must be number or string, not', type(i))
+    end
+    if card then card.owner = nil end
+	return card
+end
+
 function Pile:getRect()
     return self.x, self.y, _G.SETTINGS.cardWidth, _G.SETTINGS.cardHeight
 end
@@ -107,10 +126,12 @@ function Pile:sort()
 	-- do nothing, cards are stacked on top of each other
 end
 
+--[[
 ---@param c Card
 function Pile:tapped(c)
 	-- do nothing, handled by sublasses
 end
+]]
 
 function Pile:indexOf(c)
 	for i, card in ipairs(self.cards) do

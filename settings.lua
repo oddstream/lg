@@ -13,16 +13,16 @@ _G.SETTINGS = {
     cardRoundness = 200 / 10,
     cardRadius = 200 / 1.444 / 10,    -- cardWidth / 10
 
-    aniSpeed = 0.5,
+    aniSpeed = 0.75,
 
-    computerName = 'GinBot',
+    botName = 'GinBot',
     humanName = 'Gilbert',
 
     meldColors = {
-        [1] = {0.5, 1, 1, 0.5},
-        [2] = {1, 0.5, 1, 0.5},
-        [3] = {1, 1, 0.5, 0.5},
-        [4] = {0.5, 1, 0.5, 0.5},
+        [1] = {0.5, 1, 1, 1},
+        [2] = {1, 0.5, 1, 1},
+        [3] = {1, 1, 0.5, 1},
+        [4] = {0.5, 1, 0.5, 1},
     },
 }
 

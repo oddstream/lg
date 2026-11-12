@@ -44,12 +44,12 @@ end
 ---@param c Card
 function Hand:push(c)
     -- send this card to Pile.push, which will set the owner to this hand
-    Pile.push(self, c)
     if self.playerName == _G.SETTINGS.humanName then
         c:flipUp()
     else
         c:flipDown()
     end
+    Pile.push(self, c)
     -- log.trace("Hand:push()", self, c, c.owner)
 end
 
@@ -105,6 +105,7 @@ function Hand:insertCard(c)
     while i <= #self.cards and self.cards[i].x <= c.x do
         i = i + 1
     end
+    c:flipUp()
     table.insert(self.cards, i, c)
     c.owner = self
     -- log.info('inserted', c, 'at', i)
