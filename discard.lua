@@ -30,7 +30,6 @@ function Discard:push(c)
     log.info('push ', c, ' to ', self)
     c:flipUp()	-- discard cards are always face up
     Pile.push(self, c)
-    c.cannotDiscard = false
 end
 
 function Discard:setPosition()

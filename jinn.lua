@@ -9,6 +9,8 @@ local log = require 'log'
 ---@class (exact) Jinn
 ---@field __index Jinn
 ---@field __tostring function
+---@field state string
+---@field baize table
 ---@field new function
 ---@field isAllowed function
 ---@field notifyCardMove function
@@ -52,6 +54,7 @@ function Jinn:isAllowed(card, from, to)
     and (from == self.baize.humanHand)
     and (to == self.baize.discard)
     and #self.baize.humanHand.cards == 11
+    and not card.justDiscarded
         then return true
     end
     log.warn('not allowed')
@@ -74,15 +77,17 @@ function Jinn:notifyCardMove(card, from, to)
         and from == self.baize.humanHand
         and to == self.baize.discard
         then
+    	assert(not card.justDiscarded)
         self.baize.humanHand:sort()
         self.state = 'botDraw'
+        for _, c in ipairs(self.baize.humanHand.cards) do
+        	c.justDiscarded = nil
+        end
     end
     -- "If a player chooses to draw face-up card (from the discard pile)
     -- the discarded card cannot be the just drawn card."
     if from == self.baize.discard and to == self.baize.humanHand then
-        card.cannotDiscard = true
-    else
-        card.cannotDiscard = false
+        card.justDiscarded = true
     end
     -- TODO determine where to reset this flag
 end

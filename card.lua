@@ -12,7 +12,7 @@ local Util = require 'util'
 ---@field y integer
 ---@field prone boolean
 ---@field meld number
----@field cannotDiscard boolean (when true, card cannot be discarded)
+---@field justDiscarded boolean
 ---@field flipWidth number
 ---@field flipDirection number
 ---@field owner Pile
@@ -332,7 +332,7 @@ function Card:draw()
 		y = y - yoffset / 2
 		love.graphics.draw(img, x, y)
 	else
-		if self.cannotDiscard == true then
+		if self.justDiscarded == true then
 			love.graphics.setColor(0.5,0.5,0.5,0.5)
 			love.graphics.draw(img, x, y)
 			love.graphics.setColor(1,1,1,1)	-- otherwise background flashes

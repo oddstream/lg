@@ -61,7 +61,6 @@ end
 function Stock:push(c)
     c:flipDown()	-- receiver determines flip up or down
     Pile.push(self, c)
-    c.cannotDiscard = false
 end
 
 --[[

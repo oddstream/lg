@@ -12,6 +12,30 @@ local Jinn = require 'jinn'
 
 require 'colors'
 
+---@class (exact) Baize
+---@field __index Baize
+---@field __tostring function
+---@field stroke table
+---@field debugFont love.font
+---@field new function
+---@field load function
+---@field unload function
+---@field deal function
+---@field findCardAt function
+---@field findPileAt function
+---@field largestIntersection function
+---@field mousePressed function
+---@field mouseMoved function
+---@field mouseReleased function
+---@field keyPressed function
+---@field resize function
+---@field update function
+---@field draw function
+---@field stock Stock
+---@field discard Discard
+---@field botHand Hand
+---@field humanHand Hand
+
 local Baize = {}
 Baize.__index = Baize
 setmetatable(Baize, {__index = Scene})
@@ -206,66 +230,66 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 	love.mouse.setVisible(true)
 	if self.stroke.objectType == 'card' then
 		local card = self.stroke.object
-		if card:wasDragged() then
-			log.info('mouseReleased', card, 'dragged to', card.x, card.y)
-			local dst = self:largestIntersection(card)
-			if not dst then
-				card:cancelDrag()	-- animate card back to it's original position
-			else
-				log.trace('drag from', card.owner, 'to', dst)
-				if card.owner == dst then
-					card:stopDrag()
-					card.owner:cardDragged(card)
-				else-- dragging card to a different pile
-					if _G.Gin:isAllowed(card, card.owner, dst) then
-						local from, to = card.owner, dst
-						-- remove card from src pile (pile:pop() | table.remove() + fan())
-						card.owner:removeCard(card)
-						-- insert card into dst pile (push() | table.insert())
-						dst:insertCard(card)
-						assert(card.owner==dst)
-						-- the only combinations allowed are
-						-- stock to human hand
-						-- discard to human hand
-						-- human hand to discard
-						card:stopDrag()
-						_G.Gin:notifyCardMove(card, from, to)
-					end
-				end
-			end
-		else-- card was not dragged, so we'll call that a tap
-			log.info('mouseReleased', card, 'tapped (not dragged)')
-			if card.owner == self.stock then
-				if _G.Gin:isAllowed(card, self.stock, self.humanHand) then
-					card:stopDrag()
-					self.stock:pop()	-- .owner is now nil
-					self.humanHand:push(card)
-					_G.Gin:notifyCardMove(card, self.stock, self.humanHand)
-				else
-					card:cancelDrag()
-				end
-			elseif card.owner == self.discard then
-				if _G.Gin:isAllowed(card, self.discard, self.humanHand) then
-					card:stopDrag()
-					self.discard:pop()
-					self.humanHand:push(card)
-					_G.Gin:notifyCardMove(card, self.discard, self.humanHand)
-				else
-					card:cancelDrag()
-				end
-			elseif card.owner == self.humanHand then
-				if _G.Gin:isAllowed(card, self.humanHand, self.discard) then
-					card:stopDrag()
-					self.humanHand:removeCard(card)
-					self.discard:push(card)
-					_G.Gin:notifyCardMove(card, self.humanHand, self.discard)
-				else
-					card:cancelDrag()
-				end
-			else
-				card:cancelDrag()
-			end
-		end
+        if card:wasDragged() then
+            -- log.info('mouseReleased', card, 'dragged to', card.x, card.y)
+            local dst = self:largestIntersection(card)
+            if not dst then
+                card:cancelDrag() -- animate card back to it's original position
+                card.owner:fan()
+            else
+                log.info('drag', card, 'from', card.owner, 'to', dst)
+                if card.owner == dst then
+                    card:stopDrag()
+                    card.owner:cardDragged(card)
+                else -- dragging card to a different pile
+                    if _G.Gin:isAllowed(card, card.owner, dst) then
+                        local from, to = card.owner, dst
+                        -- remove card from src pile (pile:pop() | table.remove() + fan())
+                        from:removeCard(card)
+                        -- insert card into dst pile (push() | table.insert())
+                        dst:insertCard(card)
+                        card:stopDrag()
+                        _G.Gin:notifyCardMove(card, from, to)
+                    else
+                        card:cancelDrag()
+                        card.owner:fan() -- animate dragged card back to owner
+                    end
+                end
+            end
+        else -- card was not dragged, so we'll call that a tap
+            log.info('mouseReleased', card, 'tapped (not dragged)')
+            if card.owner == self.stock then
+                if _G.Gin:isAllowed(card, self.stock, self.humanHand) then
+                    card:stopDrag()
+                    self.stock:pop() -- .owner is now nil
+                    self.humanHand:push(card)
+                    _G.Gin:notifyCardMove(card, self.stock, self.humanHand)
+                else
+                    card:cancelDrag()
+                end
+            elseif card.owner == self.discard then
+                if _G.Gin:isAllowed(card, self.discard, self.humanHand) then
+                    card:stopDrag()
+                    self.discard:pop()
+                    self.humanHand:push(card)
+                    _G.Gin:notifyCardMove(card, self.discard, self.humanHand)
+                else
+                    card:cancelDrag()
+                end
+            elseif card.owner == self.humanHand then
+                if _G.Gin:isAllowed(card, self.humanHand, self.discard) then
+                    card:stopDrag()
+                    self.humanHand:removeCard(card)
+                    self.discard:push(card)
+                    _G.Gin:notifyCardMove(card, self.humanHand, self.discard)
+                else
+                    card:cancelDrag()
+                end
+            else
+                card:cancelDrag()
+            end
+        end
+		assert(not card:dragging())
 	end
 	self.stroke = nil
 end
