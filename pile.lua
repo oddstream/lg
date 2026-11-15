@@ -156,16 +156,7 @@ function Pile:update(dt_seconds)
 end
 
 function Pile:draw()
-	if #self.cards == 0 then
-		return
-	end
-	if _G.SETTINGS.debug then
-		love.graphics.setColor(1, 1, 1, 0.5)
-		love.graphics.setLineWidth(1)
-		local x, y, w, h = self:getRect()
-		love.graphics.rectangle('line', x, y, w, h, _G.SETTINGS.cardRadius, _G.SETTINGS.cardRadius)
-		love.graphics.setColor(1, 1, 1, 1)
-	end
+	-- do nothing, leave to subclasses
 end
 
 return Pile

@@ -83,6 +83,7 @@ local pipInfo = {
 	--[[ 11 ]] {},
 	--[[ 12 ]] {},
 	--[[ 13 ]] {},
+	--[[ 14 ]] {},
 }
 
 ---@param suit string
@@ -271,7 +272,7 @@ function _G.cardTextureFactory()
 		love.graphics.print('♣', width / 2 - pipWidth, height / 2 - pipHeight)	-- top left
 		love.graphics.print('♠', width / 2, height / 2)	-- bottom right
     end
-  
+
 	love.graphics.setCanvas()	-- reset render target to the screen
 	local cardBackTexture = canvas
 
@@ -288,7 +289,7 @@ function _G.cardTextureFactory()
 	--
 
 	local cardFaceTextures = {}
-	for _, ord in ipairs{1,2,3,4,5,6,7,8,9,10,11,12,13} do
+	for _, ord in ipairs{2,3,4,5,6,7,8,9,10,11,12,13,14} do
 		for _, suit in ipairs{'♣','♦','♥','♠'} do	-- club diamond heart spade; alpha order
 			local key = Util.cardTextureId(ord, suit)
             if ord == 10 then

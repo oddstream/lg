@@ -6,13 +6,12 @@ local Util = require 'util'
 
 ---@class (exact) Card
 ---@field suit '♣'|'♦'|'♥'|'♠'
----@field ord number 1 ... 13
+---@field ord number 2 ... 14
 ---@field textureId string created by string.format('%02u%s', ord, suit)
 ---@field x integer
 ---@field y integer
 ---@field prone boolean
----@field meld number
----@field justDiscarded boolean
+---@field selected boolean
 ---@field flipWidth number
 ---@field flipDirection number
 ---@field owner Pile
@@ -26,6 +25,9 @@ local Util = require 'util'
 ---@field isCard function
 ---@field value function
 ---@field new function
+---@field select function
+---@field unselect function
+---@field toggleSelect function
 ---@field setPosition function
 ---@field getPosition function
 ---@field getRect function
@@ -113,11 +115,23 @@ end
 ---@return number
 ---@return number
 function Card:getStaticRect()
-	if self:dragging() then
-		return self.dragStart.x, self.dragStart.y, _G.SETTINGS.cardWidth, _G.SETTINGS.cardHeight
-	else
-		return self.x, self.y, _G.SETTINGS.cardWidth, _G.SETTINGS.cardHeight
-	end
+    if self:dragging() then
+        return self.dragStart.x, self.dragStart.y, _G.SETTINGS.cardWidth, _G.SETTINGS.cardHeight
+    else
+        return self.x, self.y, _G.SETTINGS.cardWidth, _G.SETTINGS.cardHeight
+    end
+end
+
+function Card:select()
+	self.selected = true
+end
+
+function Card:unselect()
+	self.selected = false
+end
+
+function Card:toggleSelect()
+	self.selected = not self.selected
 end
 
 function Card:_startFlip()
@@ -289,6 +303,8 @@ function Card:update(dt_seconds)
 end
 
 function Card:draw()
+	assert(self)
+	assert(self.textureId)
 	local x, y = self:getPosition()
 
 	-- very important!: reset color before drawing to canvas to have colors properly displayed
@@ -311,6 +327,7 @@ function Card:draw()
 			img = _G.cardFaceTextures[self.textureId]
 		end
 	end
+    assert(img, 'no img for', self.textureId)
 
 	if self:flipping() then
 		local cw = _G.SETTINGS.cardWidth
@@ -332,17 +349,7 @@ function Card:draw()
 		y = y - yoffset / 2
 		love.graphics.draw(img, x, y)
 	else
-		if self.justDiscarded == true then
-			love.graphics.setColor(0.5,0.5,0.5,0.5)
-			love.graphics.draw(img, x, y)
-			love.graphics.setColor(1,1,1,1)	-- otherwise background flashes
-		elseif self.meld and self.meld > 0 then
-			love.graphics.setColor(_G.SETTINGS.meldColors[self.meld])
-			love.graphics.draw(img, x, y)
-			love.graphics.setColor(1,1,1,1)	-- otherwise background flashes
-		else
-			love.graphics.draw(img, x, y)
-		end
+		love.graphics.draw(img, x, y)
 	end
 end
 

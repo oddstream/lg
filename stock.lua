@@ -30,14 +30,15 @@ function Stock.new()
 end
 
 function Stock:fill()
-    local ords = {1,2,3,4,5,6,7,8,9,10,11,12,13}
+    local ords = {2,3,4,5,6,7,8,9,10,11,12,13,14}
     local suits = {'♣','♦','♥','♠'}
     for _, ord in ipairs(ords) do
         for _, suit in ipairs(suits) do
-            Pile.push(self, Card.new({ord=ord, suit=suit, prone=true}))
+            Pile.push(self, Card.new({ ord = ord, suit = suit, prone = true }))
             -- card owner is assigned in Pile.push
         end
     end
+    assert(#self.cards==52)
 end
 
 function Stock:shuffle()

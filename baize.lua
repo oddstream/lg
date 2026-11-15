@@ -91,12 +91,12 @@ function Baize:deal()
 	-- shuffle stock
 	self.stock:shuffle()
 	-- deal
-	for i = 1, 10 do
+	for i = 1, 7 do
 		self.humanHand:push(self.stock:pop())
 		self.botHand:push(self.stock:pop())
 	end
 	self.discard:push(self.stock:pop())
-	assert(#self.stock.cards == 52 - 10 - 10 - 1)
+	assert(#self.stock.cards == 52 - 7 - 7 - 1)
 
 	self:resize(love.graphics.getWidth(), love.graphics.getHeight())
 end
@@ -277,14 +277,11 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
                     card:cancelDrag()
                 end
             elseif card.owner == self.humanHand then
-                if _G.Gin:isAllowed(card, self.humanHand, self.discard) then
-                    card:stopDrag()
-                    self.humanHand:removeCard(card)
-                    self.discard:push(card)
-                    _G.Gin:notifyCardMove(card, self.humanHand, self.discard)
-                else
-                    card:cancelDrag()
-                end
+                -- no longer tap to move card to discard; human has to drag it (sorry)
+                card:stopDrag()
+                card:toggleSelect()
+                self.humanHand:fan()
+                _G.Gin:notifyCardTapped(card)
             else
                 card:cancelDrag()
             end
@@ -347,7 +344,7 @@ function Baize:update(dt_seconds)
 		card:update(dt_seconds)
 	end
 	self.elapsed = self.elapsed + dt_seconds
-	if self.elapsed > 2.0 then
+	if self.elapsed > 1.0 then
 		_G.Gin:action()
 		self.elapsed = 0.0
 	end
@@ -405,11 +402,17 @@ function Baize:draw()
 		if not self.debugFont then
 			self.debugFont = love.graphics.newFont(_G.ORD_FONT, _G.SETTINGS.cardWidth / 4)
 		end
-		local w, h, _ = love.window.getMode()
-		love.graphics.setFont(self.debugFont)
+		local ww, wh, _ = love.window.getMode()
+       	local rx, ry, rw, rh = self.humanHand:getRect()
+        love.graphics.setFont(self.debugFont)
+        if self.humanHand.selectedPokerHandType then
+        	love.graphics.print(self.humanHand.selectedPokerHandType,
+        		(ww / 2) - self.debugFont:getWidth(self.humanHand.selectedPokerHandType) / 2,
+         		ry - self.debugFont:getHeight()*2)
+        end
 		love.graphics.print(_G.Gin.state,
-			(w / 2) - self.debugFont:getWidth(_G.Gin.state) / 2,
-			h - self.debugFont:getHeight())
+			(ww / 2) - self.debugFont:getWidth(_G.Gin.state) / 2,
+			wh - self.debugFont:getHeight())
 	end
 end
 

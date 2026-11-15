@@ -6,6 +6,152 @@
 
 local log = require 'log'
 
+---@param map integer
+---@return boolean
+local function isRoyal(map)
+	-- we know that arr is a straight AND a flush, but is it royal?
+
+	-- AKQJX987654321
+	-- 11111000000000 = 15872
+
+	return map == 15872
+end
+
+--- flush defined here as all cards being the same suit
+---@param arr table
+---@return boolean
+local function isFlush(arr)
+    local s = arr[1].suit
+	for i = 2, #arr do
+        if arr[i].suit ~= s then return false end
+	end
+	return true
+end
+
+--- this is only going to work for five cards
+---@param map integer
+---@return boolean
+local function isStraight(map)
+	-- a straight need not be in order, so treat the cards as a set
+
+	-- nb we don't use a 1 card; the ace is 14
+    -- AKQJX987654321
+    -- 11111000000000 = 15872
+    -- 00000000111110 = 62
+	--
+	-- for (i=2;i<10;i++) { console.log(31<<i) }
+	for _,test in ipairs({62,124,248,496,992,1984,3968,7936,15872}) do
+		if test == map then return true end
+	end
+
+	return false
+end
+
+---@param hist integer[]
+---@param n integer
+---@return boolean
+local function isOfAKind(hist, n)
+	for i = 1, 14 do
+		if hist[i] == n then
+			return true
+		end
+	end
+	return false
+end
+
+---@param hist integer[]
+---@param n integer
+---@return integer
+local function numOf(hist, n)
+	local count = 0
+	for i = 1, 14 do
+		if hist[i] == n then
+			count = count + 1
+		end
+	end
+	return count
+end
+
+---@param arr table
+---@return string|nil
+local function pokerHandType(arr) -- an array of cards
+	-- if #arr ~= 5 then
+	-- 	return nil
+	-- end
+    --[[
+  local bits = {1,2,4,8,16,32,64,128,256,512,1024,2048,4096}
+  assert(#bits==13)
+  local histogram = {0,0,0,0,0,0,0,0,0,0,0,0,0}
+  assert(#histogram==13)
+  local map = 0
+  for i=1,5 do
+    local o = arr[i].ord
+    map = bit.bor(map, bits[o])
+    histogram[o] = histogram[o] + 1
+  end
+]]
+    -- histogram array contains counts of each card ordinal in arr
+	-- so if there are five 2's, then histogram would be [0,5,0,0..]
+	local histogram = {0,0,0,0,0,0,0,0,0,0,0,0,0,0}
+    assert(#histogram == 14)
+
+    -- bits is a list of flags; the flag is set (true) if there is a card
+    -- with that ordinal in arr. Poker deck doesn't use ordinal 1
+	local bits = {false,false,false,false,false,false,false,false,false,false,false,false,false,false}
+	assert(#bits==14)
+
+    for i = 1, #arr do
+		local o = arr[i].ord
+		histogram[o] = histogram[o] + 1
+		bits[o] = true
+	end
+
+    -- bitValues is a static/constant list of binary numbers with increasing left shifted bit
+    -- eg 0b0001, 0b0010, 0x0100, 0x1000 ...
+	-- each bit is a flag
+    local bitValues = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192 }
+    assert(#bitValues == 14)
+
+    -- combine all the flags set in boolean array bits[] into a single number
+	local map = 0
+	for i = 1, 14 do
+		if bits[i] then map = map + bitValues[i] end
+	end
+
+	local fl = #arr == 5 and isFlush(arr)
+	local st = #arr == 5 and isStraight(map)
+
+	-- test in decreasing order
+	if st and fl then
+		if isRoyal(map) then
+			return 'Royal Flush'
+  		else
+   			return 'Straight Flush'
+		end
+	elseif isOfAKind(histogram, 4) then return 'Four of a Kind'
+	elseif isOfAKind(histogram, 3) and isOfAKind(histogram, 2) then return 'Full House'
+	elseif fl then return 'Flush'
+	elseif st then return 'Straight'
+	elseif isOfAKind(histogram, 3) then return 'Three of a Kind'
+	elseif numOf(histogram, 2) == 2 then return 'Two Pair'
+	elseif isOfAKind(histogram, 2) then return 'One Pair'
+	else return 'High Card'
+	end
+end
+
+local pokerHandScore = {
+  ['Royal Flush'] = {uk=30, us=100},
+  ['Straight Flush'] = {uk=30, us=75},
+  ['Four of a Kind'] = {uk=16, us=50},
+  ['Full House'] = {uk=10, us=25},
+  ['Flush'] = {uk=5, us=20},
+  ['Straight'] = {uk=12, us=15},
+  ['Three of a Kind'] = {uk=6, us=10},
+  ['Two Pair'] = {uk=3, us=5},
+  ['One Pair'] = {uk=1, us=2},
+  ['High Card'] = {uk=0, us=0},
+}
+
 ---@class (exact) Jinn
 ---@field __index Jinn
 ---@field __tostring function
@@ -47,14 +193,11 @@ function Jinn:isAllowed(card, from, to)
     if (self.state == 'humanDraw')
     and (from == self.baize.stock or from == self.baize.discard)
     and (to == self.baize.humanHand)
-    and #self.baize.humanHand.cards == 10
         then return true
     end
     if (self.state == 'humanDiscard')
     and (from == self.baize.humanHand)
     and (to == self.baize.discard)
-    and #self.baize.humanHand.cards == 11
-    and not card.justDiscarded
         then return true
     end
     log.warn('not allowed')
@@ -69,27 +212,31 @@ function Jinn:notifyCardMove(card, from, to)
     if self.state == 'humanDraw'
         and (from == self.baize.stock or from == self.baize.discard)
         and to == self.baize.humanHand
-        then
+    then
         self.baize.humanHand:sort()
         self.state = 'humanDiscard'
     end
     if self.state == 'humanDiscard'
         and from == self.baize.humanHand
         and to == self.baize.discard
-        then
-    	assert(not card.justDiscarded)
+    then
         self.baize.humanHand:sort()
         self.state = 'botDraw'
+    end
+end
+
+---@param card Card
+function Jinn:notifyCardTapped(card)
+    if card.owner == self.baize.humanHand then
+        local arr = {}
         for _, c in ipairs(self.baize.humanHand.cards) do
-        	c.justDiscarded = nil
+            if c.selected then
+                table.insert(arr, c)
+            end
         end
+        self.baize.humanHand.selectedPokerHandType = pokerHandType(arr)
+        log.info(#arr, 'cards selected', self.baize.humanHand.selectedPokerHandType)
     end
-    -- "If a player chooses to draw face-up card (from the discard pile)
-    -- the discarded card cannot be the just drawn card."
-    if from == self.baize.discard and to == self.baize.humanHand then
-        card.justDiscarded = true
-    end
-    -- TODO determine where to reset this flag
 end
 
 function Jinn:action()
@@ -107,13 +254,9 @@ function Jinn:action()
         self.baize.botHand:sort()
         self.state = 'botDiscard'
     elseif self.state == 'botDiscard' then
-        -- move a card from botHand to discard
-        -- local n = math.random(#self.baize.botHand.cards)
-        -- local c = self.baize.botHand:remove(n)
-        -- for now, remove a random deadwood card
-        assert(#self.baize.botHand.deadwood>0)
-        local n = math.random(#self.baize.botHand.deadwood)
-        local c = self.baize.botHand:remove(self.baize.botHand.deadwood[n].textureId)
+        -- for now, move a random card from botHand to discard
+        local n = math.random(#self.baize.botHand.cards)
+        local c = self.baize.botHand:remove(n)
         self.baize.botHand:fan()
         self.baize.discard:push(c)
         self.baize.botHand:sort()

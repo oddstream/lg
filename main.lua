@@ -16,7 +16,7 @@ _G.cardBackTexture = {}
 _G.cardShadowTexture = {}
 
 ---@type string[]
-_G.ORD2STRING = {'A','2','3','4','5','6','7','8','9','10','J','Q','K'}
+_G.ORD2STRING = {'1','2','3','4','5','6','7','8','9','10','J','Q','K','A'}
 
 ---@type string
 _G.ORD_FONT = 'assets/fonts/Acme-Regular.ttf'
@@ -40,11 +40,11 @@ function love.load(args)
 
 	stage = scenes.new()
 
- 	_G.SETTINGS.Calculate()
-  _G.cardFaceTextures, _G.cardBackTexture, _G.cardShadowTexture = cardTextureFactory()
-  assert(_G.cardFaceTextures)
-  assert(type(_G.cardFaceTextures) == 'table')
-  assert(_G.cardFaceTextures[string.format('%02u%s', 1, '♠')])
+	_G.SETTINGS.Calculate()
+	_G.cardFaceTextures, _G.cardBackTexture, _G.cardShadowTexture = cardTextureFactory()
+	assert(_G.cardFaceTextures)
+	assert(type(_G.cardFaceTextures) == 'table')
+	assert(_G.cardFaceTextures[string.format('%02u%s', 2, '♠')])
 	TransitionToScene(splash.new())
 end
 
