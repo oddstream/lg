@@ -54,7 +54,7 @@ local Card = {}
 Card.__index = Card
 
 function Card:__tostring()
-	return self.textureId .. tostring(self.owner)
+	return self.textureId -- .. tostring(self.owner)
 end
 
 ---@param c Card|nil
@@ -179,8 +179,8 @@ end
 
 ---@return boolean
 function Card:nearEnough()
-	-- return math.abs(self.x - self.dst.x) < 1.0 and math.abs(self.y - self.dst.y) < 1.0
-	return self.x == self.dst.x and self.y == self.dst.y
+	return math.abs(self.x - self.dst.x) < 1.0 and math.abs(self.y - self.dst.y) < 1.0
+	-- return self.x == self.dst.x and self.y == self.dst.y
 end
 
 function Card:stopTransition()

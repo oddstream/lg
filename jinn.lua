@@ -73,7 +73,7 @@ local function numOf(hist, n)
 end
 
 ---@param arr table
----@return string|nil
+---@return string
 local function pokerHandType(arr) -- an array of cards
 	-- if #arr ~= 5 then
 	-- 	return nil
@@ -160,6 +160,7 @@ local pokerHandScore = {
 ---@field new function
 ---@field isAllowed function
 ---@field notifyCardMove function
+---@field notifyCardTapped function
 ---@field action function
 
 local Jinn = {}
@@ -179,9 +180,49 @@ function Jinn:__tostring()
 end
 
 function Jinn.new(baize)
-    local o = {baize=baize, state='setup'}
+    local o = {baize = baize, state = 'setup', botCoin = 0, humanCoin = 0}
     -- for the moment, the bot is always the dealer
     return setmetatable(o, Jinn)
+end
+
+function Jinn:botHandChanged()
+    -- self.baize.botHand:log()
+	        --[[
+	local bestHandScore = 0
+    local bestHandType = 'noname'
+    local arr = {}
+    for _, c in ipairs(self.baize.botHand.cards) do
+        table.insert(arr, c)
+    end
+    for hand in sequencesOfFive(arr) do
+        local typ = pokerHandType(hand)
+		if hand and pokerHandScore[typ].uk > bestHandScore then
+            bestHandScore = pokerHandScore[typ].uk
+			bestHandType = typ
+		end
+	end
+	self.baize.botHand.selectedPokerHandType = bestHandType
+	]]
+	self.baize.botHand:sort()
+	local arr = {}
+    for _, c in ipairs(self.baize.botHand.cards) do
+        table.insert(arr, c)
+    end
+	self.baize.botHand.selectedPokerHandType = pokerHandType(arr)
+	self.baize.botHand:fan()
+end
+
+function Jinn:humanHandChanged()
+	self.baize.humanHand:sort()
+	local arr = {}
+    for _, c in ipairs(self.baize.humanHand.cards) do
+        if c.selected then
+            table.insert(arr, c)
+        end
+    end
+    self.baize.humanHand.selectedPokerHandType = pokerHandType(arr)
+    -- log.info(#arr, 'cards selected', self.baize.humanHand.selectedPokerHandType)
+    self.baize.humanHand:fan()
 end
 
 ---@param card Card
@@ -213,14 +254,14 @@ function Jinn:notifyCardMove(card, from, to)
         and (from == self.baize.stock or from == self.baize.discard)
         and to == self.baize.humanHand
     then
-        self.baize.humanHand:sort()
+        self:humanHandChanged()
         self.state = 'humanDiscard'
     end
     if self.state == 'humanDiscard'
         and from == self.baize.humanHand
         and to == self.baize.discard
     then
-        self.baize.humanHand:sort()
+        self:humanHandChanged()
         self.state = 'botDraw'
     end
 end
@@ -228,38 +269,62 @@ end
 ---@param card Card
 function Jinn:notifyCardTapped(card)
     if card.owner == self.baize.humanHand then
-        local arr = {}
-        for _, c in ipairs(self.baize.humanHand.cards) do
-            if c.selected then
-                table.insert(arr, c)
-            end
-        end
-        self.baize.humanHand.selectedPokerHandType = pokerHandType(arr)
-        log.info(#arr, 'cards selected', self.baize.humanHand.selectedPokerHandType)
+        self:humanHandChanged()
     end
+end
+
+function Jinn:play()
+	local arr = {}
+	for _, c in ipairs(self.baize.botHand.cards) do
+        if c.selected then
+            table.insert(arr, c)
+        end
+    end
+    self.baize.botHand.selectedPokerHandType = pokerHandType(arr)
+    local botScore = pokerHandScore[self.baize.botHand.selectedPokerHandType].uk
+    arr = {}
+    for _, c in ipairs(self.baize.humanHand.cards) do
+        if c.selected then
+            table.insert(arr, c)
+        end
+    end
+    self.baize.humanHand.selectedPokerHandType = pokerHandType(arr)
+    local humanScore = pokerHandScore[self.baize.humanHand.selectedPokerHandType].uk
+    if botScore > humanScore then
+        log.info('bot wins', self.baize.botHand.selectedPokerHandType, 'better than',
+            self.baize.humanHand.selectedPokerHandType)
+        self.botCoin = self.botCoin + pokerHandScore[self.baize.botHand.selectedPokerHandType].uk
+    elseif humanScore > botScore then
+        log.info('human wins', self.baize.humanHand.selectedPokerHandType, 'better than',
+            self.baize.botHand.selectedPokerHandType)
+        self.humanCoin = self.humanCoin + pokerHandScore[self.baize.humanHand.selectedPokerHandType].uk
+    else
+        log.info('draw')
+    end
+    log.info('bot has', self.botCoin, 'coin, human has', self.humanCoin, 'coin')
+    self.state = 'setup'
 end
 
 function Jinn:action()
     -- log.info('Jinn action', self.state)
     if self.state == 'setup' then
         self.baize:deal()
-        self.baize.humanHand:sort()
-        self.baize.botHand:sort()
+        self:botHandChanged()
+        self:humanHandChanged()
         self.state = 'humanDraw'
     elseif self.state == 'botDraw' then
         -- move a card from stock/discard to botHand
         -- for now, draw card from stock
         self.baize.botHand:push(self.baize.stock:pop())
-        self.baize.botHand:fan()
-        self.baize.botHand:sort()
+        self:botHandChanged()
         self.state = 'botDiscard'
     elseif self.state == 'botDiscard' then
         -- for now, move a random card from botHand to discard
-        local n = math.random(#self.baize.botHand.cards)
-        local c = self.baize.botHand:remove(n)
-        self.baize.botHand:fan()
+        -- local n = math.random(#self.baize.botHand.cards)
+        -- local c = self.baize.botHand:remove(n)
+        local c = self.baize.botHand:pop()
         self.baize.discard:push(c)
-        self.baize.botHand:sort()
+        self:botHandChanged()
         self.state = 'humanDraw'
     end
 end

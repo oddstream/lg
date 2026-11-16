@@ -13,4 +13,5 @@ Dealership alternates from round to round, with the first dealer chosen by any a
 - Display type of poker hand selected, hand value £, total value £ (where?)
 - Tap on stock/discard to draw a card to hand
 - Round drawn if stock cards exhausted
+- Buttons on the right for right-handed players (could be a setting)
 - Add special cards to hand, which increases power but decreases playable hand size, eg stone cards, wildcards, multipliers, &c

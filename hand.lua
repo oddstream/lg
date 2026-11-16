@@ -18,6 +18,7 @@ local Pile = require 'pile'
 ---@field width function
 ---@field getRect function
 ---@field repositionCards function
+---@field numberSelected function
 ---@field update function(dt_seconds:number)
 
 local Hand = {}
@@ -161,6 +162,15 @@ end
 function Hand:sort()
     table.sort(self.cards, function(a, b) return a.ord > b.ord end)
     self:fan()
+end
+
+---@return integer
+function Hand:numberSelected()
+    local n = 0
+    for _, c in ipairs(self.cards) do
+    	if c.selected then n = n + 1 end
+    end
+    return n
 end
 
 -- update, draw handled by Pile

@@ -39,8 +39,9 @@ end
 
 function Pile:log()
 	local str = ''
-	for i, c in ipairs(self.cards) do
-		str = str .. string.format('%d) %s %d ', i, c, c.x)
+    for i, c in ipairs(self.cards) do
+		str = str .. tostring(c)
+		-- str = str .. string.format('%d) %s %d ', i, c, c.x)
 	end
 	log.info(str)
 end

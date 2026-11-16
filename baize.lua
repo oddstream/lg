@@ -57,7 +57,7 @@ function Baize.new()
 
 	o:resize(love.graphics.getWidth(), love.graphics.getHeight())
 
-	o.elapsed = 0.0	-- count down Jinn action
+	o.elapsed = 10.0	-- count down Jinn action; start high to get going immediately
 	_G.Gin = Jinn.new(o)
 
 	return setmetatable(o, Baize)
@@ -79,14 +79,14 @@ function Baize:deal()
 	-- down pile is known as the stock pile.
 
 	-- recall all cards from piles
-	log.info(#self.stock.cards, 'cards in stock')
+	-- log.info(#self.stock.cards, 'cards in stock')
 	for _, p in ipairs({self.botHand, self.discard, self.humanHand}) do
-		log.info('recall', #p.cards, 'from', p)
+		-- log.info('recall', #p.cards, 'from', p)
 		while #p.cards > 0 do
 			self.stock:push(p:pop())
 		end
 	end
-	log.info(#self.stock.cards, 'cards in stock')
+	-- log.info(#self.stock.cards, 'cards in stock')
 	assert(#self.stock.cards==52)
 	-- shuffle stock
 	self.stock:shuffle()
@@ -229,15 +229,16 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 	end
 	love.mouse.setVisible(true)
 	if self.stroke.objectType == 'card' then
-		local card = self.stroke.object
+        local card = self.stroke.object
+		-- TODO allow the card to move a little when tapped, transition it back
         if card:wasDragged() then
             -- log.info('mouseReleased', card, 'dragged to', card.x, card.y)
             local dst = self:largestIntersection(card)
             if not dst then
-                card:cancelDrag() -- animate card back to it's original position
+                card:cancelDrag() -- transition card back to it's original position
                 card.owner:fan()
             else
-                log.info('drag', card, 'from', card.owner, 'to', dst)
+                -- log.info('drag', card, 'from', card.owner, 'to', dst)
                 if card.owner == dst then
                     card:stopDrag()
                     card.owner:cardDragged(card)
@@ -257,7 +258,7 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
                 end
             end
         else -- card was not dragged, so we'll call that a tap
-            log.info('mouseReleased', card, 'tapped (not dragged)')
+            -- log.info('mouseReleased', card, 'tapped (not dragged)')
             if card.owner == self.stock then
                 if _G.Gin:isAllowed(card, self.stock, self.humanHand) then
                     card:stopDrag()
@@ -279,9 +280,18 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
             elseif card.owner == self.humanHand then
                 -- no longer tap to move card to discard; human has to drag it (sorry)
                 card:stopDrag()
-                card:toggleSelect()
-                self.humanHand:fan()
-                _G.Gin:notifyCardTapped(card)
+                -- TODO this test belongs in Jinn, where the rules are
+                if self.humanHand:numberSelected() == 5 and not card.selected then
+                	log.warn('cannot select more than 5 cards')
+                else
+                    card:toggleSelect()
+                   	-- if card.selected then
+                  		-- card:setPosition(card.x, card.y - (_G.SETTINGS.cardHeight * 0.15))
+                   	-- else
+                  		-- card:setPosition(card.x, card.y + (_G.SETTINGS.cardHeight * 0.15))
+                    -- end
+                  	_G.Gin:notifyCardTapped(card)
+                end
             else
                 card:cancelDrag()
             end
@@ -311,9 +321,13 @@ end
 function Baize:keyPressed(key)
 	-- log.info("baize key pressed: " .. key)
 	if key == 'escape' then
-		love.event.quit(0)
-	elseif key == 'd' then
-		self:deal()
+        love.event.quit(0)
+	elseif key == 'f' then
+		for _, c in ipairs(self.botHand.cards) do
+			c:flip()
+		end
+	elseif key == 'p' then
+		_G.Gin:play()
 	elseif key == 's' then
 		self.humanHand:sort()
 	elseif key == 'p' then
@@ -403,12 +417,18 @@ function Baize:draw()
 			self.debugFont = love.graphics.newFont(_G.ORD_FONT, _G.SETTINGS.cardWidth / 4)
 		end
 		local ww, wh, _ = love.window.getMode()
-       	local rx, ry, rw, rh = self.humanHand:getRect()
         love.graphics.setFont(self.debugFont)
-        if self.humanHand.selectedPokerHandType then
+        if self.botHand.selectedPokerHandType then
+      		local rx, ry, rw, rh = self.botHand:getRect()
+        	love.graphics.print(self.botHand.selectedPokerHandType,
+        		(ww / 2) - self.debugFont:getWidth(self.botHand.selectedPokerHandType) / 2,
+         		ry + rh + self.debugFont:getHeight()/2)
+        end
+        if self.humanHand.selectedPokerHandType and self.humanHand:numberSelected() > 0 then
+       		local rx, ry, rw, rh = self.humanHand:getRect()
         	love.graphics.print(self.humanHand.selectedPokerHandType,
         		(ww / 2) - self.debugFont:getWidth(self.humanHand.selectedPokerHandType) / 2,
-         		ry - self.debugFont:getHeight()*2)
+         		ry - self.debugFont:getHeight()*2.0)
         end
 		love.graphics.print(_G.Gin.state,
 			(ww / 2) - self.debugFont:getWidth(_G.Gin.state) / 2,

@@ -13,17 +13,10 @@ _G.SETTINGS = {
     cardRoundness = 200 / 10,
     cardRadius = 200 / 1.444 / 10,    -- cardWidth / 10
 
-    aniSpeed = 0.75,
+    aniSpeed = 0.5,
 
     botName = 'GinBot',
     humanName = 'Gilbert',
-
-    meldColors = {
-        [1] = {0.5, 1, 1, 1},
-        [2] = {1, 0.5, 1, 1},
-        [3] = {1, 1, 0.5, 1},
-        [4] = {0.5, 1, 0.5, 1},
-    },
 }
 
 _G.SETTINGS.Calculate = function()

@@ -288,9 +288,10 @@ function _G.cardTextureFactory()
 
 	--
 
-	local cardFaceTextures = {}
-	for _, ord in ipairs{2,3,4,5,6,7,8,9,10,11,12,13,14} do
-		for _, suit in ipairs{'♣','♦','♥','♠'} do	-- club diamond heart spade; alpha order
+    local cardFaceTextures = {}
+	-- TODO add texture for card ord=1, for special cards
+	for _, ord in ipairs(_G.ALLORDS) do			-- 2 .. 10 and Jack=11, Queen=12, King=13, Ace=14
+		for _, suit in ipairs(_G.ALLSUITS) do	-- Club Diamond Heart Spade; alpha order
 			local key = Util.cardTextureId(ord, suit)
             if ord == 10 then
                 cardFaceTextures[key] = createRegularFace(cardFaceTexture, ordFont10, suitFont, suitFontSmall, suitFontLarge, width, height, ord, suit)
