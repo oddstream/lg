@@ -4,6 +4,7 @@ local log = require 'log'
 
 local Card = require 'card'
 local Pile = require 'pile'
+local Util = require 'util'
 
 ---@class (exact) Hand: Pile
 ---@field __index Hand
@@ -91,7 +92,7 @@ function Hand:removeCard(c)
     local idx = self:indexOf(c)
     assert(idx)
     table.remove(self.cards, idx)
-    self:sort()
+    -- self:sort()
 end
 
 ---@param c Card
@@ -107,7 +108,7 @@ function Hand:insertCard(c)
     table.insert(self.cards, i, c)
     c.owner = self
     -- log.info('inserted', c, 'at', i)
-    self:sort()
+    -- self:sort()
 end
 
 ---@return number
@@ -160,7 +161,16 @@ function Hand:fan()
 end
 
 function Hand:sort()
-    table.sort(self.cards, function(a, b) return a.ord > b.ord end)
+    -- lua table.sort is not stable, and we want it to be
+    -- sort on decreasing ord then increasing suit
+    table.sort(self.cards,
+        function(a, b)
+            if a.ord == b.ord then
+                -- sorts into Unicode code point order Spade, Club, Heart, Diamond
+                return a.suit < b.suit
+            end
+            return a.ord > b.ord
+        end)
     self:fan()
 end
 

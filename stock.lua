@@ -58,6 +58,7 @@ end
 
 ---@param c Card
 function Stock:push(c)
+    c:unselect()
     c:flipDown()	-- receiver determines flip up or down
     Pile.push(self, c)
 end

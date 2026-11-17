@@ -27,7 +27,8 @@ function Discard.new()
 end
 
 function Discard:push(c)
-    log.info('push ', c, ' to ', self)
+    -- log.info('push ', c, ' to ', self)
+    c:unselect()
     c:flipUp()	-- discard cards are always face up
     Pile.push(self, c)
 end

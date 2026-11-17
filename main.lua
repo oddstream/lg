@@ -15,6 +15,10 @@ _G.cardBackTexture = {}
 ---@type love.Canvas
 _G.cardShadowTexture = {}
 
+-- ♠ (Spade):	U+2660
+-- ♣ (Club):	U+2663
+-- ♥ (Heart):	U+2665
+-- ♦ (Diamond):	U+2666
 ---@type string[]
 _G.ALLSUITS = { '♣', '♦', '♥', '♠' }
 

@@ -213,7 +213,7 @@ function Jinn:botHandChanged()
 end
 
 function Jinn:humanHandChanged()
-	self.baize.humanHand:sort()
+    self.baize.humanHand:sort()
 	local arr = {}
     for _, c in ipairs(self.baize.humanHand.cards) do
         if c.selected then
@@ -274,14 +274,14 @@ function Jinn:notifyCardTapped(card)
 end
 
 function Jinn:play()
-	local arr = {}
+	
+    local arr = {}
 	for _, c in ipairs(self.baize.botHand.cards) do
-        if c.selected then
-            table.insert(arr, c)
-        end
+        table.insert(arr, c)
     end
     self.baize.botHand.selectedPokerHandType = pokerHandType(arr)
     local botScore = pokerHandScore[self.baize.botHand.selectedPokerHandType].uk
+
     arr = {}
     for _, c in ipairs(self.baize.humanHand.cards) do
         if c.selected then
@@ -290,6 +290,7 @@ function Jinn:play()
     end
     self.baize.humanHand.selectedPokerHandType = pokerHandType(arr)
     local humanScore = pokerHandScore[self.baize.humanHand.selectedPokerHandType].uk
+
     if botScore > humanScore then
         log.info('bot wins', self.baize.botHand.selectedPokerHandType, 'better than',
             self.baize.humanHand.selectedPokerHandType)

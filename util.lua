@@ -82,6 +82,19 @@ function Util.overlapArea(x, y, w, h, X, Y, W, H)
 	return ox * oy;
 end
 
+---finds the length of the hypotenuse between two points
+---@param x1 number
+---@param y1 number
+---@param x2 number
+---@param y2 number
+---@return number
+function Util.distance(x1, y1, x2, y2)
+	return math.sqrt((x2 - x1)^2 + (y2 - y1)^2)
+	-- Alternatively, you can raise the sum of squares 
+	-- to the power of 0.5 instead of using math.sqrt
+	-- return ((x2 - x1)^2 + (y2 - y1)^2) ^ 0.5
+end
+
 ---@param color table
 ---@return love.Canvas
 function Util.createGradientCanvas(color)
