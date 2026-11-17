@@ -125,6 +125,11 @@ function Util.createGradientCanvas(color)
 	return canvas
 end
 
+---@param colorName string
+function Util.setColor(colorName)
+    love.graphics.setColor(love.math.colorFromBytes(unpack(_G.COLORS[colorName])))
+end
+
 ---@param ord number
 ---@param suit string
 ---@return string

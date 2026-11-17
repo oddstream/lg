@@ -13,10 +13,19 @@ _G.SETTINGS = {
     cardRoundness = 200 / 10,
     cardRadius = 200 / 1.444 / 10,    -- cardWidth / 10
 
-    aniSpeed = 0.5,
+    aniSpeed = 0.75,
 
     botName = 'GinBot',
     humanName = 'Gilbert',
+
+    cardColors = {
+        ['♦'] = 'Crimson',
+        -- ['♦'] = 'DarkOrange',
+        ['♥'] = 'Crimson',
+        ['♣'] = 'Black',
+        -- ['♣'] = 'DarkBlue',
+        ['♠'] = 'Black',
+    }
 }
 
 _G.SETTINGS.Calculate = function()

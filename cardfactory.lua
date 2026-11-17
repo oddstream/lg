@@ -91,11 +91,12 @@ local pipInfo = {
 local function getSuitColor(suit)
 	-- returns {r, g, b} table that can be passed to love.graphics.setColor
 	-- after unpacking and passing through getColorFromBytes
-    if suit == '♦' or suit == '♥' then
-        return _G.COLORS['Crimson']
-    else
-        return _G.COLORS['Black']
-    end
+    -- if suit == '♦' or suit == '♥' then
+    --     return _G.COLORS['Crimson']
+    -- else
+    --     return _G.COLORS['Black']
+    -- end
+	return _G.COLORS[_G.SETTINGS.cardColors[suit]]
 end
 
 ---@param color string

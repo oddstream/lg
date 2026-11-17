@@ -19,6 +19,7 @@ local Util = require 'util'
 ---@field src {x:number, y:number}|nil
 ---@field dst {x:number, y:number}|nil
 ---@field flipStartTime number|nil
+---@field aniTime number
 ---@field lerpStartTime number|nil
 ---@field __index Card
 ---@field __tostring function
@@ -67,6 +68,8 @@ function Card:value()
 	return math.min(self.ord, 10)
 end
 
+---@param o table
+---@return Card
 function Card.new(o)
 	assert(type(o)=='table')
 	assert(type(o.suit)=='string')
@@ -207,6 +210,14 @@ function Card:transitionTo(x, y)
 	self.src = {x = self.x, y = self.y}
 	self.dst = {x = x, y = y}
 
+	-- especially when selecting a card, we need the animation to be snappy
+	if Util.distance(self.x, self.y, x, y) < _G.SETTINGS.cardHeight / 2 then
+		self.aniTime = 0.1
+		self.aniFunc = Util.lerp
+	else
+		self.aniTime = _G.SETTINGS.aniSpeed
+		self.aniFunc = Util.smoothstep
+	end
 	self.lerpStartTime = love.timer.getTime()
 end
 
@@ -256,9 +267,9 @@ function Card:update(dt_seconds)
 	if self:transitioning() then
 		if not self:nearEnough() then
 			-- Calculate the fraction of the total duration that has passed
-			local t = (love.timer.getTime() - self.lerpStartTime) / _G.SETTINGS.aniSpeed
-			self.x = Util.smoothstep(self.src.x, self.dst.x, t)
-			self.y = Util.smoothstep(self.src.y, self.dst.y, t)
+			local t = (love.timer.getTime() - self.lerpStartTime) / self.aniTime
+			self.x = self.aniFunc(self.src.x, self.dst.x, t)
+			self.y = self.aniFunc(self.src.y, self.dst.y, t)
 			-- local rate = 10.0	-- too low gives settling flicker
 			-- https://www.gamedeveloper.com/programming/improved-lerp-smoothing-
 			-- value = lerp(target, value, exp2(-rate*deltaTime))

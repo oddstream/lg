@@ -274,36 +274,10 @@ function Jinn:notifyCardTapped(card)
 end
 
 function Jinn:play()
-	
-    local arr = {}
-	for _, c in ipairs(self.baize.botHand.cards) do
-        table.insert(arr, c)
+    for _, c in ipairs(self.baize.botHand.cards) do
+        c:flip()
     end
-    self.baize.botHand.selectedPokerHandType = pokerHandType(arr)
-    local botScore = pokerHandScore[self.baize.botHand.selectedPokerHandType].uk
-
-    arr = {}
-    for _, c in ipairs(self.baize.humanHand.cards) do
-        if c.selected then
-            table.insert(arr, c)
-        end
-    end
-    self.baize.humanHand.selectedPokerHandType = pokerHandType(arr)
-    local humanScore = pokerHandScore[self.baize.humanHand.selectedPokerHandType].uk
-
-    if botScore > humanScore then
-        log.info('bot wins', self.baize.botHand.selectedPokerHandType, 'better than',
-            self.baize.humanHand.selectedPokerHandType)
-        self.botCoin = self.botCoin + pokerHandScore[self.baize.botHand.selectedPokerHandType].uk
-    elseif humanScore > botScore then
-        log.info('human wins', self.baize.humanHand.selectedPokerHandType, 'better than',
-            self.baize.botHand.selectedPokerHandType)
-        self.humanCoin = self.humanCoin + pokerHandScore[self.baize.humanHand.selectedPokerHandType].uk
-    else
-        log.info('draw')
-    end
-    log.info('bot has', self.botCoin, 'coin, human has', self.humanCoin, 'coin')
-    self.state = 'setup'
+    self.state = 'showdown'
 end
 
 function Jinn:action()
@@ -327,6 +301,46 @@ function Jinn:action()
         self.baize.discard:push(c)
         self:botHandChanged()
         self.state = 'humanDraw'
+    elseif self.state == 'showdown' then
+    -- change Play button to 'Cash Out'
+        local arr = {}
+        for _, c in ipairs(self.baize.botHand.cards) do
+            table.insert(arr, c)
+        end
+        self.baize.botHand.selectedPokerHandType = pokerHandType(arr)
+        local botScore = pokerHandScore[self.baize.botHand.selectedPokerHandType].uk
+
+        arr = {}
+        for _, c in ipairs(self.baize.humanHand.cards) do
+            if c.selected then
+                table.insert(arr, c)
+            end
+        end
+        self.baize.humanHand.selectedPokerHandType = pokerHandType(arr)
+        local humanScore = pokerHandScore[self.baize.humanHand.selectedPokerHandType].uk
+
+        if botScore > humanScore then
+            log.info('bot wins', self.baize.botHand.selectedPokerHandType, 'better than',
+                self.baize.humanHand.selectedPokerHandType)
+            self.botCoin = self.botCoin + pokerHandScore[self.baize.botHand.selectedPokerHandType].uk
+        elseif humanScore > botScore then
+            log.info('human wins', self.baize.humanHand.selectedPokerHandType, 'better than',
+                self.baize.botHand.selectedPokerHandType)
+            self.humanCoin = self.humanCoin + pokerHandScore[self.baize.humanHand.selectedPokerHandType].uk
+        else
+            log.info('draw')
+        end
+        log.info('bot has', self.botCoin, 'coin, human has', self.humanCoin, 'coin')
+        self.state = 'setup'
+        -- self.state = 'cashout'
+    elseif self.state == 'cashout' then
+        self.state = 'setup'
+    end
+
+    if self.state == 'humanDraw' and self.baize.humanHand:numberSelected() > 0 then
+        self.baize.playButton.state = 'active'
+    else
+        self.baize.playButton.state = 'disabled'
     end
 end
 

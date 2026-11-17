@@ -2,6 +2,7 @@
 
 local log = require 'log'
 
+local Button = require 'ui_button'
 local Scene = require 'scene'
 local Stock = require 'stock'
 local Discard = require 'discard'
@@ -16,6 +17,7 @@ require 'colors'
 ---@field __index Baize
 ---@field __tostring function
 ---@field stroke table
+---@field playButton Widget
 ---@field debugFont love.font
 ---@field new function
 ---@field load function
@@ -23,6 +25,7 @@ require 'colors'
 ---@field deal function
 ---@field findCardAt function
 ---@field findPileAt function
+---@field findWidgetAt function
 ---@field largestIntersection function
 ---@field mousePressed function
 ---@field mouseMoved function
@@ -54,6 +57,19 @@ function Baize.new()
 	o.botHand = Hand.new(_G.SETTINGS.botName)
 
 	o.humanHand = Hand.new(_G.SETTINGS.humanName)
+
+	o.playButton = Button.new({
+		x = 0,
+		y = 0,
+		state = 'disabled',
+		text = 'Play',
+		radius = _G.SETTINGS.cardWidth / 2,
+		backColor = 'CornflowerBlue',
+		foreColor = 'Ivory',
+		width = _G.SETTINGS.cardHeight,
+		height = _G.SETTINGS.cardWidth,
+		jinCommand = 'play'
+	})
 
 	o:resize(love.graphics.getWidth(), love.graphics.getHeight())
 
@@ -153,6 +169,16 @@ function Baize:findPileAt(x, y)
 	return nil
 end
 
+---@param x number
+---@param y number
+---@return Widget|nil
+function Baize:findWidgetAt(x, y)
+	if self.playButton:isPointOver(x, y) then
+		return self.playButton
+	end
+	return nil
+end
+
 ---@param c Card
 ---@return Pile|nil
 function Baize:largestIntersection(c)
@@ -181,22 +207,35 @@ function Baize:mousePressed(x, y, button, istouch, presses)
 		return
 	end
 	local card = self:findCardAt(x, y)
-	if not card then
-		log.info('mousePressed', 'no card at', x, y)
-		return
+	if card then
+		if not card:static() then
+			log.warn('mousePressed', card, 'is not static')
+		end
+		-- when we start dragging, we leave the card in it's owning pile
+		self.stroke = {
+			init = {x = x, y = y},
+			object = card,
+			objectType = 'card',
+		}
+		card:startDrag()
+		love.mouse.setVisible(false)
+		-- log.info('mousePressed', 'card', 'dragStart', card.dragStart.x, card.dragStart.y)
+	else
+		local widget = self:findWidgetAt(x, y)
+		if widget then
+			log.info('widget mousePressed', widget.state)
+			if widget.state == 'active' then
+				self.stroke = {
+					init = {x = x, y = y},
+					object = widget,
+					objectType = 'widget',
+				}
+				widget.state = 'pressed'
+			else
+				log.info('widget is not active', widget.state)
+			end
+		end
 	end
-	if not card:static() then
-		log.warn('mousePressed', card, 'is not static')
-	end
-	-- when we start dragging, we leave the card in it's owning pile
-	self.stroke = {
-		init = {x = x, y = y},
-		object = card,
-		objectType = 'card',
-	}
-	card:startDrag()
-	love.mouse.setVisible(false)
-	-- log.info('mousePressed', 'card', 'dragStart', card.dragStart.x, card.dragStart.y)
 end
 
 ---@param x number
@@ -214,6 +253,7 @@ function Baize:mouseMoved(x, y, dx, dy, istouch)
 		local card = self.stroke.object
 		card:dragBy(dx2, dy2)
 	end
+	-- we don't drag buttons/widgets, so no action required
 end
 
 ---@param x number
@@ -229,6 +269,7 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 	end
 	love.mouse.setVisible(true)
 	if self.stroke.objectType == 'card' then
+		---@type Card
         local card = self.stroke.object
 		-- TODO allow the card to move a little when tapped, transition it back
         if card:wasDragged() then
@@ -297,6 +338,20 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
             end
         end
 		assert(not card:dragging())
+	elseif self.stroke.objectType == 'widget' then
+		-- check mouse is still over button before triggering action
+		---@type Widget
+		local widget = self.stroke.object
+		log.info('widget released')
+		if widget:isPointOver(x, y) then
+			---@type Button
+			local button = widget
+			log.info('button pressed', button.jinCommand)
+			if type(button.jinCommand) == 'string' and type(_G.Gin[button.jinCommand]) == 'function' then
+				_G.Gin[button.jinCommand](_G.Gin)
+			end
+		end
+		widget.state = 'active'
 	end
 	self.stroke = nil
 end
@@ -326,11 +381,9 @@ function Baize:keyPressed(key)
 		for _, c in ipairs(self.botHand.cards) do
 			c:flip()
 		end
-	elseif key == 'p' then
+	elseif key == 'p' and _G.Gin.state == 'humanDraw' then
 		_G.Gin:play()
-	elseif key == 's' then
-		self.humanHand:sort()
-	elseif key == 'p' then
+	elseif key == 'r' then
 		log.info(self.botHand, self.stock, self.discard, self.humanHand)
 	end
 end
@@ -344,6 +397,7 @@ function Baize:resize(w, h)
 		p:setPosition()
 		p:fan()
 	end
+	self.playButton:resize(w, h)
 	self.debugFont = nil
 end
 
@@ -411,6 +465,8 @@ function Baize:draw()
 	-- 	local card = self.stroke.object
 	-- 	card:draw()
 	-- end
+
+	self.playButton:draw()
 
 	if _G.SETTINGS.debug then
 		if not self.debugFont then
