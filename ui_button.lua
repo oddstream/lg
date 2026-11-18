@@ -25,6 +25,7 @@ end
 ---@param y number
 ---@return boolean
 function Button:isPointOver(x, y)
+    if self.state == 'disabled' or self.state == 'hidden' then return false end
     local d = Util.distance(self.x, self.y, x, y)
     return d <= self.radius
     -- return Util.inRect(x, y, self:getRect())

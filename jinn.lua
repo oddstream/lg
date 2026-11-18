@@ -6,45 +6,48 @@
 
 local log = require 'log'
 
----@param map integer
----@return boolean
-local function isRoyal(map)
-	-- we know that arr is a straight AND a flush, but is it royal?
-
-	-- AKQJX987654321
-	-- 11111000000000 = 15872
-
-	return map == 15872
-end
-
---- flush defined here as all cards being the same suit
 ---@param arr table
 ---@return boolean
-local function isFlush(arr)
-    local s = arr[1].suit
-	for i = 2, #arr do
-        if arr[i].suit ~= s then return false end
-	end
-	return true
+local function containsFlush(arr)
+    if #arr < 5 then return false end
+    if #arr == 5 then
+        local s = arr[1].suit
+        for i = 2, #arr do
+            if arr[i].suit ~= s then return false end
+        end
+        return true
+    end
+    if #arr > 5 then
+        local counts = {}
+        for _, c in ipairs(arr) do
+            counts[c.suit] = (counts[c.suit] or 0) + 1
+            if counts[c.suit] >= 5 then
+                return true
+            end
+        end
+        return false
+    end
+	return false
 end
 
---- this is only going to work for five cards
----@param map integer
----@return boolean
-local function isStraight(map)
-	-- a straight need not be in order, so treat the cards as a set
+---@param t table
+---@return boolean, boolean
+local function containsStraight(t)
+	-- only works if table is sorted into decreasing .ord
+    local streak = 1
 
-	-- nb we don't use a 1 card; the ace is 14
-    -- AKQJX987654321
-    -- 11111000000000 = 15872
-    -- 00000000111110 = 62
-	--
-	-- for (i=2;i<10;i++) { console.log(31<<i) }
-	for _,test in ipairs({62,124,248,496,992,1984,3968,7936,15872}) do
-		if test == map then return true end
-	end
+    for i = 2, #t do
+        if t[i].ord == t[i - 1].ord - 1 then
+            streak = streak + 1
+            if streak == 5 then
+                return true, t[i].ord == 10
+            end
+        else
+            streak = 1
+        end
+    end
 
-	return false
+    return false, false
 end
 
 ---@param hist integer[]
@@ -72,58 +75,25 @@ local function numOf(hist, n)
 	return count
 end
 
----@param arr table
+---@param arr Card[]
 ---@return string
-local function pokerHandType(arr) -- an array of cards
-	-- if #arr ~= 5 then
-	-- 	return nil
-	-- end
-    --[[
-  local bits = {1,2,4,8,16,32,64,128,256,512,1024,2048,4096}
-  assert(#bits==13)
-  local histogram = {0,0,0,0,0,0,0,0,0,0,0,0,0}
-  assert(#histogram==13)
-  local map = 0
-  for i=1,5 do
-    local o = arr[i].ord
-    map = bit.bor(map, bits[o])
-    histogram[o] = histogram[o] + 1
-  end
-]]
+local function pokerHandType(arr)
+    -- only works if hand is sorted into decreasing ord (because of straight check)
     -- histogram array contains counts of each card ordinal in arr
 	-- so if there are five 2's, then histogram would be [0,5,0,0..]
 	local histogram = {0,0,0,0,0,0,0,0,0,0,0,0,0,0}
     assert(#histogram == 14)
-
-    -- bits is a list of flags; the flag is set (true) if there is a card
-    -- with that ordinal in arr. Poker deck doesn't use ordinal 1
-	local bits = {false,false,false,false,false,false,false,false,false,false,false,false,false,false}
-	assert(#bits==14)
-
     for i = 1, #arr do
 		local o = arr[i].ord
 		histogram[o] = histogram[o] + 1
-		bits[o] = true
 	end
 
-    -- bitValues is a static/constant list of binary numbers with increasing left shifted bit
-    -- eg 0b0001, 0b0010, 0x0100, 0x1000 ...
-	-- each bit is a flag
-    local bitValues = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192 }
-    assert(#bitValues == 14)
-
-    -- combine all the flags set in boolean array bits[] into a single number
-	local map = 0
-	for i = 1, 14 do
-		if bits[i] then map = map + bitValues[i] end
-	end
-
-	local fl = #arr == 5 and isFlush(arr)
-	local st = #arr == 5 and isStraight(map)
+	local fl = containsFlush(arr)
+    local st, royal = containsStraight(arr)
 
 	-- test in decreasing order
 	if st and fl then
-		if isRoyal(map) then
+        if royal then
 			return 'Royal Flush'
   		else
    			return 'Straight Flush'
@@ -133,7 +103,8 @@ local function pokerHandType(arr) -- an array of cards
 	elseif fl then return 'Flush'
 	elseif st then return 'Straight'
 	elseif isOfAKind(histogram, 3) then return 'Three of a Kind'
-	elseif numOf(histogram, 2) == 2 then return 'Two Pair'
+        -- use >= not == incase there are three pair, which we don't count
+	elseif numOf(histogram, 2) >= 2 then return 'Two Pair'
 	elseif isOfAKind(histogram, 2) then return 'One Pair'
 	else return 'High Card'
 	end
@@ -180,7 +151,7 @@ function Jinn:__tostring()
 end
 
 function Jinn.new(baize)
-    local o = {baize = baize, state = 'setup', botCoin = 0, humanCoin = 0}
+    local o = {baize = baize, state = 'setup', round = 0, botCoin = 0, humanCoin = 0}
     -- for the moment, the bot is always the dealer
     return setmetatable(o, Jinn)
 end
@@ -208,7 +179,8 @@ function Jinn:botHandChanged()
     for _, c in ipairs(self.baize.botHand.cards) do
         table.insert(arr, c)
     end
-	self.baize.botHand.selectedPokerHandType = pokerHandType(arr)
+	-- self.baize.botHand.selectedPokerHandType = pokerHandType(arr)
+	self.baize.botHand.selectedPokerHandType = nil
 	self.baize.botHand:fan()
 end
 
@@ -230,7 +202,7 @@ end
 ---@param to Pile
 ---@return boolean
 function Jinn:isAllowed(card, from, to)
-    log.trace('isAllowed?', self.state, card, from, to)
+    -- log.trace('isAllowed?', self.state, card, from, to)
     if (self.state == 'humanDraw')
     and (from == self.baize.stock or from == self.baize.discard)
     and (to == self.baize.humanHand)
@@ -274,19 +246,77 @@ function Jinn:notifyCardTapped(card)
 end
 
 function Jinn:play()
+    -- player has pressed the play button
+    -- show bot cards and hand type
+    -- hide play button
+    -- show cashout button
     for _, c in ipairs(self.baize.botHand.cards) do
         c:flip()
     end
-    self.state = 'showdown'
+
+    local arr = {}
+    for _, c in ipairs(self.baize.botHand.cards) do
+        table.insert(arr, c)
+    end
+    self.baize.botHand.selectedPokerHandType = pokerHandType(arr)
+
+    arr = {}
+    for _, c in ipairs(self.baize.humanHand.cards) do
+        if c.selected then
+            table.insert(arr, c)
+        end
+    end
+    self.baize.humanHand.selectedPokerHandType = pokerHandType(arr)
+
+    self.state = 'cashout'
+end
+
+function Jinn:cashout()
+    -- player has pressed the cashout button
+    -- update coins and return to setup state
+    local botScore = pokerHandScore[self.baize.botHand.selectedPokerHandType].uk
+    local humanScore = pokerHandScore[self.baize.humanHand.selectedPokerHandType].uk
+
+    if botScore > humanScore then
+        log.info('bot wins', self.baize.botHand.selectedPokerHandType, 'better than',
+            self.baize.humanHand.selectedPokerHandType)
+        self.botCoin = self.botCoin + botScore
+    elseif humanScore > botScore then
+        log.info('human wins', self.baize.humanHand.selectedPokerHandType, 'better than',
+            self.baize.botHand.selectedPokerHandType)
+        self.humanCoin = self.humanCoin + humanScore
+    else
+        log.info('draw')
+    end
+    log.info('bot has', self.botCoin, 'coin, human has', self.humanCoin, 'coin')
+
+    self.state = 'setup'
 end
 
 function Jinn:action()
     -- log.info('Jinn action', self.state)
     if self.state == 'setup' then
+        self.round = self.round + 1
         self.baize:deal()
         self:botHandChanged()
         self:humanHandChanged()
+        self.baize.roundLabel.text = string.format('Round %d', self.round)
+        self.baize.botScoreLabel.text = string.format('Bot $%d', self.botCoin)
+        self.baize.humanScoreLabel.text = string.format('You $%d', self.humanCoin)
+        self.baize.playButton.state = 'disabled'
+        self.baize.cashoutButton.state = 'hidden'
         self.state = 'humanDraw'
+    elseif self.state == 'humanDraw' then
+        if self.baize.humanHand:numberSelected() > 0 then
+            self.baize.playButton.state = 'active'
+        else
+            self.baize.playButton.state = 'disabled'
+        end
+        self.baize.cashoutButton.state = 'hidden'
+    elseif self.state == 'humanDiscard' then
+        self.baize.playButton.state = 'disabled'
+        self.baize.cashoutButton.state = 'hidden'
+        -- waiting for player to discard, do nothing
     elseif self.state == 'botDraw' then
         -- move a card from stock/discard to botHand
         -- for now, draw card from stock
@@ -300,48 +330,15 @@ function Jinn:action()
         local c = self.baize.botHand:pop()
         self.baize.discard:push(c)
         self:botHandChanged()
-        self.state = 'humanDraw'
-    elseif self.state == 'showdown' then
-    -- change Play button to 'Cash Out'
-        local arr = {}
-        for _, c in ipairs(self.baize.botHand.cards) do
-            table.insert(arr, c)
-        end
-        self.baize.botHand.selectedPokerHandType = pokerHandType(arr)
-        local botScore = pokerHandScore[self.baize.botHand.selectedPokerHandType].uk
-
-        arr = {}
-        for _, c in ipairs(self.baize.humanHand.cards) do
-            if c.selected then
-                table.insert(arr, c)
-            end
-        end
-        self.baize.humanHand.selectedPokerHandType = pokerHandType(arr)
-        local humanScore = pokerHandScore[self.baize.humanHand.selectedPokerHandType].uk
-
-        if botScore > humanScore then
-            log.info('bot wins', self.baize.botHand.selectedPokerHandType, 'better than',
-                self.baize.humanHand.selectedPokerHandType)
-            self.botCoin = self.botCoin + pokerHandScore[self.baize.botHand.selectedPokerHandType].uk
-        elseif humanScore > botScore then
-            log.info('human wins', self.baize.humanHand.selectedPokerHandType, 'better than',
-                self.baize.botHand.selectedPokerHandType)
-            self.humanCoin = self.humanCoin + pokerHandScore[self.baize.humanHand.selectedPokerHandType].uk
-        else
-            log.info('draw')
-        end
-        log.info('bot has', self.botCoin, 'coin, human has', self.humanCoin, 'coin')
-        self.state = 'setup'
-        -- self.state = 'cashout'
-    elseif self.state == 'cashout' then
-        self.state = 'setup'
-    end
-
-    if self.state == 'humanDraw' and self.baize.humanHand:numberSelected() > 0 then
-        self.baize.playButton.state = 'active'
-    else
         self.baize.playButton.state = 'disabled'
+        self.baize.cashoutButton.state = 'hidden'
+        self.state = 'humanDraw'
+    elseif self.state == 'cashout' then
+        self.baize.playButton.state = 'hidden'
+        self.baize.cashoutButton.state = 'active'
+        -- waiting for player to press cashout button, do nothing
     end
+
 end
 
 return Jinn

@@ -6,6 +6,7 @@ local Util = require 'util'
 ---@field __index Widget
 ---@field new function
 ---@field state string 'active'|'hidden'|'pressed'|'disabled'
+---@field jinCommand string
 ---@field x number
 ---@field y number
 ---@field width number
@@ -14,6 +15,7 @@ local Util = require 'util'
 ---@field setPosition function
 ---@field getRect function
 ---@field setRect function
+---@field isPointOver function
 ---@field resize function
 ---@field update function
 ---@field draw function

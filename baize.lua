@@ -3,6 +3,7 @@
 local log = require 'log'
 
 local Button = require 'ui_button'
+local Label = require 'ui_label'
 local Scene = require 'scene'
 local Stock = require 'stock'
 local Discard = require 'discard'
@@ -18,6 +19,7 @@ require 'colors'
 ---@field __tostring function
 ---@field stroke table
 ---@field playButton Widget
+---@field cashoutButton Widget
 ---@field debugFont love.font
 ---@field new function
 ---@field load function
@@ -66,10 +68,48 @@ function Baize.new()
 		radius = _G.SETTINGS.cardWidth / 2,
 		backColor = 'CornflowerBlue',
 		foreColor = 'Ivory',
-		width = _G.SETTINGS.cardHeight,
-		height = _G.SETTINGS.cardWidth,
 		jinCommand = 'play'
 	})
+	o.cashoutButton = Button.new({
+		x = 0,
+		y = 0,
+		state = 'disabled',
+		text = 'Cash Out',
+		radius = _G.SETTINGS.cardWidth / 2,
+		backColor = 'Black',
+		foreColor = 'Ivory',
+		jinCommand = 'cashout'
+	})
+	o.buttons = {o.playButton,o.cashoutButton}
+
+	o.roundLabel = Label.new({
+		x = 0,
+		y = 0,
+		width = _G.SETTINGS.cardHeight,
+		height = _G.SETTINGS.cardWidth,
+		backColor = 'DarkGreen',
+		foreColor = 'Ivory',
+		state = 'active',
+	})
+	o.botScoreLabel = Label.new({
+		x = 0,
+		y = 0,
+		width = _G.SETTINGS.cardHeight,
+		height = _G.SETTINGS.cardWidth,
+		backColor = 'DarkGreen',
+		foreColor = 'Ivory',
+		state = 'active',
+	})
+	o.humanScoreLabel = Label.new({
+		x = 0,
+		y = 0,
+		width = _G.SETTINGS.cardHeight,
+		height = _G.SETTINGS.cardWidth,
+		backColor = 'DarkGreen',
+		foreColor = 'Ivory',
+		state = 'active',
+	})
+	o.labels = {o.roundLabel,o.botScoreLabel,o.humanScoreLabel}
 
 	o:resize(love.graphics.getWidth(), love.graphics.getHeight())
 
@@ -171,10 +211,13 @@ end
 
 ---@param x number
 ---@param y number
----@return Widget|nil
+---@return Widget|Button|nil
 function Baize:findWidgetAt(x, y)
 	if self.playButton:isPointOver(x, y) then
 		return self.playButton
+	end
+	if self.cashoutButton:isPointOver(x, y) then
+		return self.cashoutButton
 	end
 	return nil
 end
@@ -223,7 +266,7 @@ function Baize:mousePressed(x, y, button, istouch, presses)
 	else
 		local widget = self:findWidgetAt(x, y)
 		if widget then
-			log.info('widget mousePressed', widget.state)
+			-- log.info('widget mousePressed', widget.jinCommand, widget.state)
 			if widget.state == 'active' then
 				self.stroke = {
 					init = {x = x, y = y},
@@ -232,7 +275,7 @@ function Baize:mousePressed(x, y, button, istouch, presses)
 				}
 				widget.state = 'pressed'
 			else
-				log.info('widget is not active', widget.state)
+				log.warn('widget is not active', widget.jinCommand, widget.state)
 			end
 		end
 	end
@@ -269,7 +312,6 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 	end
 	love.mouse.setVisible(true)
 	if self.stroke.objectType == 'card' then
-		---@type Card
         local card = self.stroke.object
 		-- TODO allow the card to move a little when tapped, transition it back
         if card:wasDragged() then
@@ -340,15 +382,12 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 		assert(not card:dragging())
 	elseif self.stroke.objectType == 'widget' then
 		-- check mouse is still over button before triggering action
-		---@type Widget
 		local widget = self.stroke.object
-		log.info('widget released')
+		log.info('widget released', widget.jinCommand)
 		if widget:isPointOver(x, y) then
-			---@type Button
-			local button = widget
-			log.info('button pressed', button.jinCommand)
-			if type(button.jinCommand) == 'string' and type(_G.Gin[button.jinCommand]) == 'function' then
-				_G.Gin[button.jinCommand](_G.Gin)
+			log.info('button pressed', widget.jinCommand)
+			if type(widget.jinCommand) == 'string' and type(_G.Gin[widget.jinCommand]) == 'function' then
+				_G.Gin[widget.jinCommand](_G.Gin)
 			end
 		end
 		widget.state = 'active'
@@ -397,7 +436,15 @@ function Baize:resize(w, h)
 		p:setPosition()
 		p:fan()
 	end
-	self.playButton:resize(w, h)
+	for _, b in ipairs(self.buttons) do
+		b:resize(w, h)
+	end
+	local y = 0
+	for _, l in ipairs(self.labels) do
+		l:resize(w, h)
+		l:setPosition(w - l.width, y)
+		y = y + l.height
+	end
 	self.debugFont = nil
 end
 
@@ -424,6 +471,14 @@ function Baize:draw()
 		self.backgroundCanvas = Util.createGradientCanvas(_G.COLORS.DarkGreen)
 	end
 	love.graphics.draw(self.backgroundCanvas, 0, 0)
+
+	-- draw the UI first, so cards can spill over it, rather than vice-a-versa
+	for _, b in ipairs(self.buttons) do
+		b:draw()
+	end
+	for _, l in ipairs(self.labels) do
+		l:draw()
+	end
 
 	local sources = {self.stock, self.discard, self.botHand, self.humanHand}
 
@@ -459,14 +514,6 @@ function Baize:draw()
 			end
 		end
 	end
-
-	-- used to need this when card.owner was removed when dragging started
-	-- if self.stroke and self.stroke.objectType == 'card' then
-	-- 	local card = self.stroke.object
-	-- 	card:draw()
-	-- end
-
-	self.playButton:draw()
 
 	if _G.SETTINGS.debug then
 		if not self.debugFont then

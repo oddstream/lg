@@ -16,15 +16,28 @@ local function isRoyal(map)
 	return map == 15872
 end
 
---- flush defined here as all cards being the same suit
 ---@param arr table
 ---@return boolean
-local function isFlush(arr)
-    local s = arr[1].suit
-	for i = 2, #arr do
-        if arr[i].suit ~= s then return false end
-	end
-	return true
+local function containsFlush(arr)
+    if #arr < 5 then return false end
+    if #arr == 5 then
+        local s = arr[1].suit
+        for i = 2, #arr do
+            if arr[i].suit ~= s then return false end
+        end
+        return true
+    end
+    if #arr > 5 then
+        local counts = {}
+        for _, c in ipairs(arr) do
+            counts[c.suit] = (counts[c.suit] or 0) + 1
+            if counts[c.suit] >= 5 then
+                return true
+            end
+        end
+        return false
+    end
+	return false
 end
 
 --- this is only going to work for five cards
@@ -44,6 +57,26 @@ local function isStraight(map)
 	end
 
 	return false
+end
+
+---@param t table
+---@return boolean, boolean
+local function containsStraight(t)
+	-- only works if table is sorted into decreasing .ord
+    local streak = 1
+
+    for i = 2, #t do
+        if t[i].ord == t[i - 1].ord - 1 then
+            streak = streak + 1
+            if streak == 5 then
+                return true, t[i].ord == 10
+            end
+        else
+            streak = 1
+        end
+    end
+
+    return false, false
 end
 
 ---@param hist integer[]
@@ -117,22 +150,25 @@ local function pokerHandType(arr) -- an array of cards
 		if bits[i] then map = map + bitValues[i] end
 	end
 
-	local fl = #arr == 5 and isFlush(arr)
-	local st = #arr == 5 and isStraight(map)
+    local fl = containsFlush(arr)
+	-- local fl = isOfAKind(histogram, 5)	-- isIfAKind() considers ord, not suit
+    -- local st = #arr == 5 and isStraight(map)
+	local st, royal = containsStraight(arr)
 
 	-- test in decreasing order
 	if st and fl then
-		if isRoyal(map) then
-			return 'Royal Flush'
+		-- if isRoyal(map) then
+		if royal then
+			return 'Royal Flush'	-- A K Q J 10, same suit
   		else
-   			return 'Straight Flush'
+   			return 'Straight Flush'	-- eg J 10 9 8 7, same suit
 		end
 	elseif isOfAKind(histogram, 4) then return 'Four of a Kind'
 	elseif isOfAKind(histogram, 3) and isOfAKind(histogram, 2) then return 'Full House'
 	elseif fl then return 'Flush'
 	elseif st then return 'Straight'
 	elseif isOfAKind(histogram, 3) then return 'Three of a Kind'
-	elseif numOf(histogram, 2) == 2 then return 'Two Pair'
+	elseif numOf(histogram, 2) >= 2 then return 'Two Pair'
 	elseif isOfAKind(histogram, 2) then return 'One Pair'
 	else return 'High Card'
 	end
@@ -235,16 +271,50 @@ local shortPair = {
 	{suit='♦', ord=10},
 	{suit='♥', ord=7},
 }
-local longHand = {
+local longHandRoyalFlush = {
+	{suit='♣', ord=1},
+	{suit='♣', ord=14},
+	{suit='♣', ord=13},
+	{suit='♣', ord=12},
+	{suit='♣', ord=11},
 	{suit='♣', ord=10},
+	{suit='♣', ord=7},
+}
+local longHandFullHouse = {
+	{suit='♣', ord=11},
 	{suit='♦', ord=10},
-	{suit='♥', ord=7},
+	{suit='♦', ord=7},
+	{suit='♦', ord=10},
+	{suit='♦', ord=8},
+	{suit='♦', ord=7},
 	{suit='♣', ord=10},
+}
+local longHandFlush = {
+	{suit='♣', ord=11},
 	{suit='♦', ord=10},
-	{suit='♥', ord=7},
-	{suit='♣', ord=10},
+	{suit='♦', ord=9},
+	{suit='♦', ord=8},
+	{suit='♦', ord=2},
+	{suit='♦', ord=7},
+	{suit='♣', ord=13},
+}
+local longHandStraight = {
+	{suit='♦', ord=2},
+	{suit='♣', ord=11},
 	{suit='♦', ord=10},
-	{suit='♥', ord=7},
+	{suit='♣', ord=9},
+	{suit='♦', ord=8},
+	{suit='♦', ord=7},
+	{suit='♣', ord=13},
+}
+local longHandTwoPair = {
+	{suit='♦', ord=11},
+	{suit='♣', ord=11},
+	{suit='♦', ord=10},
+	{suit='♣', ord=9},
+	{suit='♦', ord=9},
+	{suit='♦', ord=7},
+	{suit='♣', ord=7},
 }
 local singleCard = {
 	{suit='♣', ord=10},
@@ -261,6 +331,64 @@ print('Two Pair', pokerHandType(twoPair))
 print('Pair', pokerHandType(onePair))
 print('High Card', pokerHandType(highCard))
 
-print('Short Pair', pokerHandType(shortPair))
-print('Long Hand', pokerHandType(longHand))
+print('Short One Pair', pokerHandType(shortPair))
+print('Long Royal Flush', pokerHandType(longHandRoyalFlush))
+print('Long Full House', pokerHandType(longHandFullHouse))
+print('Long Flush', pokerHandType(longHandFlush))
+print('Long Straight', pokerHandType(longHandStraight))
+print('Long Two Pair', pokerHandType(longHandTwoPair))
 print('Single Card', pokerHandType(singleCard))
+
+function get_combinations(cards, k)
+    return coroutine.create(function()
+        local n = #cards
+        local current_hand = {}
+
+        local function generate(start_index)
+            -- Base case: we have selected k cards
+            if #current_hand == k then
+                -- Yield a copy of the current hand
+                local copy = {}
+                for i = 1, k do
+                    copy[i] = current_hand[i]
+                end
+                coroutine.yield(copy)
+                return
+            end
+
+            -- Recursive step: pick the next card from the remaining pool
+            for i = start_index, n do
+                table.insert(current_hand, cards[i])
+                generate(i + 1)
+                table.remove(current_hand) -- Backtrack
+            end
+        end
+
+        generate(1)
+    end)
+end
+--[[
+local function printHand(hand)
+    local str = ''
+    for i, c in ipairs(hand) do
+    	str = str .. c.suit .. c.ord .. ' '
+    end
+	print(str)
+end
+
+local co = get_combinations(longHand, 5)
+printHand(longHand)
+print("Generating combinations of 5 from 7:")
+local count = 0
+local bestType = ''
+local bestScore = 0
+while true do
+    local success, result = coroutine.resume(co)
+    if not success or not result then break end
+    local typ = pokerHandType(result)
+    count = count + 1
+    -- Format the table for printing
+    printHand(result)
+end
+-- print(string.format("Total combinations generated: %d (expected 21)", count))
+]]
