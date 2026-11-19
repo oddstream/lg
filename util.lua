@@ -148,4 +148,13 @@ function Util.inRect(x, y, rx, ry, rw, rh)
 	return x >= rx and y >= ry and x < (rx + rw) and y < (ry + rh)
 end
 
+function Util.printCentered(text, x, y, w, h)
+    local font = love.graphics.getFont()
+	if not font then return end
+    local _, lines = font:getWrap(text, w)
+    local textHeight = #lines * font:getHeight() * font:getLineHeight()
+    local textY = y + (h - textHeight) / 2
+    love.graphics.printf(text, x, textY, w, "center")
+end
+
 return Util

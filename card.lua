@@ -61,7 +61,14 @@ end
 ---@param c Card|nil
 ---@return boolean
 function Card.isCard(c)
-	return c ~= nil and type(c)=='table' and c.__index==Card and type(c.suit)=='string' and type(c.ord)=='number' and type(c.prone)=='boolean'
+	return c ~= nil 
+	and type(c)=='table' 
+	and c.__index==Card 
+	and type(c.suit)=='string' 
+	and type(c.ord)=='number' 
+	and type(c.prone)=='boolean' 
+	and type(c.x) == 'number'
+	and type(c.y) == 'number'
 end
 
 function Card:value()
@@ -194,6 +201,10 @@ end
 ---@param x number
 ---@param y number
 function Card:transitionTo(x, y)
+	assert(self.x)
+	assert(self.y)
+	assert(x)
+	assert(y)
     -- log.trace(self, self.x, self.y, 'to', x, y)
 	if self.x == x and self.y == y then
 		self:setPosition(x, y)

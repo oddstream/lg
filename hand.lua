@@ -16,7 +16,7 @@ local Util = require 'util'
 ---@field cardDragged function(c:Card)
 ---@field fan function
 ---@field sort function
----@field width function
+---@field getWidth function
 ---@field getRect function
 ---@field repositionCards function
 ---@field numberSelected function
@@ -112,32 +112,32 @@ function Hand:insertCard(c)
 end
 
 ---@return number
-function Hand:width()
+function Hand:getWidth()
     -- if self.cards == nil or #self.cards == 0 then
     --     return 0
     -- end
-    -- Hand piles need space for 10 + 1 cards
+    -- Hand piles need space for 7 + 1 cards
     -- return (#self.cards - 1) * _G.SETTINGS.cardWidth * 0.75 + _G.SETTINGS.cardWidth
-    return (10) * _G.SETTINGS.cardWidth * 0.75 + _G.SETTINGS.cardWidth
+    return (7) * _G.SETTINGS.cardWidth * 0.75 + _G.SETTINGS.cardWidth
 end
 
 function Hand:getRect()
-    return self.x, self.y, self:width(), _G.SETTINGS.cardHeight
+    return self.x, self.y, self:getWidth(), _G.SETTINGS.cardHeight
 end
 
-function Hand:setPosition()
+---@param r Rect
+function Hand:layout(r)
     if self.cards == nil or #self.cards == 0 then
         return
     end
-	local width, height, _ = love.window.getMode()
-    self.x = (width / 2) - (self:width() / 2)
+    self.x = r.x + (r.width / 2) - (self:getWidth() / 2)
 
     if self.playerName == _G.SETTINGS.humanName then
-        self.y = height - _G.SETTINGS.cardHeight - (_G.SETTINGS.cardHeight / 4)
+        self.y = r.height - _G.SETTINGS.cardHeight - (_G.SETTINGS.cardHeight / 4)
     else
         self.y = (_G.SETTINGS.cardHeight / 4)
     end
-    -- log.trace("Hand:setPosition()", self, self.x, self.y)
+    -- log.trace("Hand:layout()", self, self.x, self.y)
     self:repositionCards()
 end
 
@@ -149,6 +149,7 @@ function Hand:fan()
     for _, c in ipairs(self.cards) do
         local y = self.y
         if c.selected then
+            -- lift the human card by 15%
         	if self.playerName == _G.SETTINGS.humanName then
         		y = y - (_G.SETTINGS.cardHeight * 0.15)
          	else
@@ -184,5 +185,11 @@ function Hand:numberSelected()
 end
 
 -- update, draw handled by Pile
+
+function Hand:draw()
+    Util.setColor('DarkGreen')
+    local x, y, w, h = self:getRect()
+    love.graphics.rectangle('fill', x, y, w, h)
+end
 
 return Hand

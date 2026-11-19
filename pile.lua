@@ -12,6 +12,8 @@ local Card = require 'card'
 ---@field __tostring function
 ---@field x integer
 ---@field y integer
+---@field width integer
+---@field height integer
 ---@field cards Card[]
 ---@field new function
 ---@field peek function
@@ -26,6 +28,9 @@ local Card = require 'card'
 ---@field sort function
 ---@field tapped function(c:Card)
 ---@field getRect function
+---@field setPosition function
+---@field layout function(r:Rect)
+---@field resize function
 ---@field update function(dt_seconds:number)
 ---@field draw function()
 
@@ -48,7 +53,8 @@ end
 
 ---@return Pile
 function Pile.new()
-    return setmetatable({x=0, y=0, cards={}}, Pile)
+	local o = {x=0, y=0, width=_G.SETTINGS.cardWidth, height=_G.SETTINGS.cardHeight, cards={}}
+    return setmetatable(o, Pile)
 end
 
 ---@return Card
@@ -95,6 +101,14 @@ end
 
 function Pile:getRect()
     return self.x, self.y, _G.SETTINGS.cardWidth, _G.SETTINGS.cardHeight
+end
+
+---@param x integer
+---@param y integer
+function Pile:setPosition(x, y)
+    self.x = x
+    self.y = y
+    self:repositionCards()
 end
 
 ---@param c Card, still in it's owning pile
@@ -144,6 +158,9 @@ function Pile:indexOf(c)
 end
 
 function Pile:repositionCards()
+	-- log.trace('Pile:repositionCards() to', self.x, self.y)
+	assert(type(self.x)=='number')
+	assert(type(self.y)=='number')
 	for _, c in ipairs(self.cards) do
 		c:setPosition(self.x, self.y)
 	end
@@ -154,6 +171,17 @@ function Pile:update(dt_seconds)
 	for _, c in ipairs(self.cards) do
 		c:update(dt_seconds)
 	end
+end
+
+---@param r Rect
+function Pile:layout(r)
+	-- do nothing, leave to subclasses
+end
+
+---@param w integer
+---@param h integer
+function Pile:resize(w, h)
+	-- do nothing, leave to subclasses
 end
 
 function Pile:draw()

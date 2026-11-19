@@ -8,7 +8,6 @@ local Util = require 'util'
 ---@field radius number
 ---@field foreColor string
 ---@field backColor string
----@field font love.font
 ---@field jinCommand string
 
 local Button = {}
@@ -34,9 +33,7 @@ end
 ---@param w number
 ---@param h number
 function Button:resize(w, h)
-    self.font = love.graphics.newFont(_G.ORD_FONT, _G.SETTINGS.cardWidth / 2)
     self.radius = _G.SETTINGS.cardWidth / 2
-	self:setPosition(w - self.radius * 2, h - self.radius * 2)
 end
 
 function Button:draw()
@@ -58,12 +55,13 @@ function Button:draw()
     end
     Util.setColor(backColor)
     love.graphics.circle('fill', x, y, self.radius)
-    -- love.graphics.setLineWidth(1)
-    -- love.graphics.setColor(0, 0, 0, 1)	-- cartoon outlines are black, so why not
-    -- love.graphics.circle('line', self.x, self.y, _G.SETTINGS.cardWidth / 2)
+    love.graphics.setLineWidth(1)
+    love.graphics.setColor(0, 0, 0, 0.5)	-- cartoon outlines are black, so why not
+    love.graphics.circle('line', x, y, self.radius)
 
-    -- font is created when button is resized, this happens early
-    if self.font then
+    if self.text then
+        love.graphics.setFont(_G.uiFont)
+        
         local foreColor
         if not self.foreColor then
             foreColor = 'UiForeground'
@@ -72,16 +70,9 @@ function Button:draw()
         end
         Util.setColor(foreColor)
         -- center the text in the circle
-        local tw, th = self.font:getWidth(self.text), self.font:getHeight()
-        -- Use offsets (ox, oy) to center the text anchor point
-        love.graphics.print(self.text, x-(tw/4), y-(th/4)) --, 0, 1, 1, tw / 2, th / 2)
+        local textY = y - _G.uiFont:getHeight() / 2
+        love.graphics.printf(self.text, x - self.radius, textY, self.radius * 2, "center")
     end
-
-    -- do
-    --     love.graphics.setColor(1, 1, 1, 0.1)
-    --     local x, y, w, h = self:getRect()
-    --     love.graphics.rectangle('fill', x, y, w, h, _G.SETTINGS.cardRadius, _G.SETTINGS.cardRadius)
-    -- end
 
     love.graphics.setColor(1, 1, 1, 1)
 end

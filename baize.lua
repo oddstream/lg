@@ -14,13 +14,22 @@ local Jinn = require 'jinn'
 
 require 'colors'
 
+---@class (exact) Rect
+---@field x number
+---@field y number
+---@field width number
+---@field height number
+
 ---@class (exact) Baize
 ---@field __index Baize
 ---@field __tostring function
+---@field cardRect Rect
+---@field uiRect Rect
 ---@field stroke table
+---@field labels Label[]
+---@field buttons Button[]
 ---@field playButton Widget
 ---@field cashoutButton Widget
----@field debugFont love.font
 ---@field new function
 ---@field load function
 ---@field unload function
@@ -50,9 +59,11 @@ function Baize.new()
 
 	o.backgroundCanvas = nil
 	o.stock = Stock.new()
+	assert(type(o.stock.x)=='number')
+	assert(type(o.stock.y)=='number')
 	o.stock:fill()
 	o.stock:shuffle()
-	o.stock:setPosition() -- otherwise it's at 0,0
+	-- o.stock:setPosition() -- otherwise it's at 0,0
 	log.info('created', #o.stock.cards, 'cards')
 	o.discard = Discard.new()
 
@@ -431,21 +442,32 @@ end
 ---@param h number
 function Baize:resize(w, h)
 	-- log.info("Baize resized to: " .. w .. "x" .. h)
-	self.backgroundCanvas = nil
+	self.backgroundCanvas = nil	-- regenerate this at next draw()
+	self.cardRect = {x=0, y=0, width=w-_G.SETTINGS.cardHeight, height=h}
+	self.uiRect = {x=self.cardRect.width, y=0, width=_G.SETTINGS.cardHeight, height=h}
+	_G.uiFont = love.graphics.newFont(_G.ORD_FONT, _G.SETTINGS.cardWidth / 4)
+
 	for _, p in ipairs({self.stock, self.discard, self.botHand, self.humanHand}) do
-		p:setPosition()
+		p:layout(self.cardRect)
+		-- p:resize(w, h)
 		p:fan()
 	end
+	-- all buttons sit at the center bottom of the uiRect
 	for _, b in ipairs(self.buttons) do
 		b:resize(w, h)
+		local gap = b.radius / 2
+		b:setPosition(
+			self.uiRect.x + (self.uiRect.width / 2) - (b.radius / 2) + gap,
+			self.uiRect.height - b.radius - gap
+		)
 	end
-	local y = 0
+	-- labels stack vertically from the top of the uiRect
+	local y = self.uiRect.y
 	for _, l in ipairs(self.labels) do
 		l:resize(w, h)
-		l:setPosition(w - l.width, y)
+		l:setPosition(self.uiRect.x, y)
 		y = y + l.height
 	end
-	self.debugFont = nil
 end
 
 ---@param dt_seconds number
@@ -470,7 +492,18 @@ function Baize:draw()
    	if self.backgroundCanvas == nil then
 		self.backgroundCanvas = Util.createGradientCanvas(_G.COLORS.DarkGreen)
 	end
+	love.graphics.setColor(1,1,1,1)
 	love.graphics.draw(self.backgroundCanvas, 0, 0)
+
+	if self.uiRect then	-- may not have had a resize() yet
+		Util.setColor('DarkGreen')
+		love.graphics.setLineWidth(1)
+		love.graphics.line(
+			self.uiRect.x,
+			self.uiRect.y,
+			self.uiRect.x,
+			self.uiRect.y + self.uiRect.height)
+	end
 
 	-- draw the UI first, so cards can spill over it, rather than vice-a-versa
 	for _, b in ipairs(self.buttons) do
@@ -516,26 +549,25 @@ function Baize:draw()
 	end
 
 	if _G.SETTINGS.debug then
-		if not self.debugFont then
-			self.debugFont = love.graphics.newFont(_G.ORD_FONT, _G.SETTINGS.cardWidth / 4)
-		end
 		local ww, wh, _ = love.window.getMode()
-        love.graphics.setFont(self.debugFont)
+
+        love.graphics.setFont(_G.uiFont)
+		Util.setColor('Ivory')
         if self.botHand.selectedPokerHandType then
       		local rx, ry, rw, rh = self.botHand:getRect()
         	love.graphics.print(self.botHand.selectedPokerHandType,
-        		(ww / 2) - self.debugFont:getWidth(self.botHand.selectedPokerHandType) / 2,
-         		ry + rh + self.debugFont:getHeight()/2)
+        		(ww / 2) - _G.uiFont:getWidth(self.botHand.selectedPokerHandType) / 2,
+         		ry + rh + _G.uiFont:getHeight()/2)
         end
         if self.humanHand.selectedPokerHandType and self.humanHand:numberSelected() > 0 then
        		local rx, ry, rw, rh = self.humanHand:getRect()
         	love.graphics.print(self.humanHand.selectedPokerHandType,
-        		(ww / 2) - self.debugFont:getWidth(self.humanHand.selectedPokerHandType) / 2,
-         		ry - self.debugFont:getHeight()*2.0)
+        		(ww / 2) - _G.uiFont:getWidth(self.humanHand.selectedPokerHandType) / 2,
+         		ry - _G.uiFont:getHeight()*2.0)
         end
 		love.graphics.print(_G.Gin.state,
-			(ww / 2) - self.debugFont:getWidth(_G.Gin.state) / 2,
-			wh - self.debugFont:getHeight())
+			(ww / 2) - _G.uiFont:getWidth(_G.Gin.state) / 2,
+			wh - _G.uiFont:getHeight())
 	end
 end
 

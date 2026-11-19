@@ -111,6 +111,7 @@ local function pokerHandType(arr)
 end
 
 local pokerHandScore = {
+-- uk scores don't seem based on frequency - straight > flush!?
   ['Royal Flush'] = {uk=30, us=100},
   ['Straight Flush'] = {uk=30, us=75},
   ['Four of a Kind'] = {uk=16, us=50},
@@ -167,8 +168,8 @@ function Jinn:botHandChanged()
     end
     for hand in sequencesOfFive(arr) do
         local typ = pokerHandType(hand)
-		if hand and pokerHandScore[typ].uk > bestHandScore then
-            bestHandScore = pokerHandScore[typ].uk
+		if hand and pokerHandScore[typ].us > bestHandScore then
+            bestHandScore = pokerHandScore[typ].us
 			bestHandType = typ
 		end
 	end
@@ -274,8 +275,8 @@ end
 function Jinn:cashout()
     -- player has pressed the cashout button
     -- update coins and return to setup state
-    local botScore = pokerHandScore[self.baize.botHand.selectedPokerHandType].uk
-    local humanScore = pokerHandScore[self.baize.humanHand.selectedPokerHandType].uk
+    local botScore = pokerHandScore[self.baize.botHand.selectedPokerHandType].us
+    local humanScore = pokerHandScore[self.baize.humanHand.selectedPokerHandType].us
 
     if botScore > humanScore then
         log.info('bot wins', self.baize.botHand.selectedPokerHandType, 'better than',

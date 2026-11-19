@@ -11,7 +11,6 @@ local Card = require 'card'
 ---@field new function
 ---@field fill function
 ---@field shuffle function
----@field setPosition function
 
 local Stock = {}
 Stock.__index = Stock
@@ -32,7 +31,9 @@ end
 function Stock:fill()
     for _, ord in ipairs(_G.ALLORDS) do
         for _, suit in ipairs(_G.ALLSUITS) do
-            Pile.push(self, Card.new({ ord = ord, suit = suit, prone = true }))
+            local c = Card.new({ord = ord, suit = suit, prone = true})
+            assert(Card.isCard(c))
+            Pile.push(self, c)
             -- card owner is assigned in Pile.push
         end
     end
@@ -70,14 +71,14 @@ function Stock:tapped(c)
 end
 ]]
 
-function Stock:setPosition()
-	local width, height, _ = love.window.getMode()
-    self.x = (width / 2) - (_G.SETTINGS.cardWidth / 2)
-    self.y = (height / 2) - (_G.SETTINGS.cardHeight / 2)
+---@param r Rect
+function Stock:layout(r)
+    self.x = (r.width / 2) - (_G.SETTINGS.cardWidth / 2)
+    self.y = (r.height / 2) - (_G.SETTINGS.cardHeight / 2)
 
     self.x = self.x - (_G.SETTINGS.cardWidth * 0.75)
     self:repositionCards()
-    -- log.trace("Stock:setPosition()", self, self.x, self.y)
+    -- log.trace("Stock:layout()", self, self.x, self.y)
 end
 
 -- update, draw handled by Pile

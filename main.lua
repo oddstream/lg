@@ -34,6 +34,10 @@ _G.ORD_FONT = 'assets/fonts/Acme-Regular.ttf'
 ---@type string
 _G.SUIT_FONT = 'assets/fonts/DejaVuSans.ttf'
 
+---@type love.Font
+_G.uiFont = love.graphics.newFont(_G.ORD_FONT, _G.SETTINGS.cardWidth / 4)
+assert(_G.uiFont)
+
 -- instance of a Scenes object, holding stack of scenes, with the current scene at index 1
 -- local to this file, but accessible to all scene files via the TransitionToScene() function below
 local stage

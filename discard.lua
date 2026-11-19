@@ -8,7 +8,6 @@ local Pile = require 'pile'
 ---@field __index Discard
 ---@field __tostring function
 ---@field new function
----@field setPosition function
 
 local Discard = {}
 Discard.__index = Discard
@@ -33,13 +32,14 @@ function Discard:push(c)
     Pile.push(self, c)
 end
 
-function Discard:setPosition()
-	local width, height, _ = love.window.getMode()
-    self.x = (width / 2) - (_G.SETTINGS.cardWidth / 2)
-    self.y = (height / 2) - (_G.SETTINGS.cardHeight / 2)
+---@param r Rect
+function Discard:layout(r)
+    self.x = (r.width / 2) - (_G.SETTINGS.cardWidth / 2)
+    self.y = (r.height / 2) - (_G.SETTINGS.cardHeight / 2)
 
     self.x = self.x + (_G.SETTINGS.cardWidth * 0.75)
     self:repositionCards()
+    -- log.trace("Discard:layout()", self, self.x, self.y)
 end
 
 -- update, draw handled by Pile
