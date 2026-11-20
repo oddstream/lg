@@ -158,7 +158,7 @@ function Baize:deal()
 	-- shuffle stock
 	self.stock:shuffle()
 	-- deal
-	for i = 1, 7 do
+	for _ = 1, 7 do
 		self.humanHand:push(self.stock:pop())
 		self.botHand:push(self.stock:pop())
 	end
@@ -449,7 +449,6 @@ function Baize:resize(w, h)
 
 	for _, p in ipairs({self.stock, self.discard, self.botHand, self.humanHand}) do
 		p:layout(self.cardRect)
-		-- p:resize(w, h)
 		p:fan()
 	end
 	-- all buttons sit at the center bottom of the uiRect
@@ -551,8 +550,9 @@ function Baize:draw()
 	if _G.SETTINGS.debug then
 		local ww, wh, _ = love.window.getMode()
 
-        love.graphics.setFont(_G.uiFont)
+		love.graphics.setFont(_G.uiFont)
 		Util.setColor('Ivory')
+
         if self.botHand.selectedPokerHandType then
       		local rx, ry, rw, rh = self.botHand:getRect()
         	love.graphics.print(self.botHand.selectedPokerHandType,
@@ -561,9 +561,9 @@ function Baize:draw()
         end
         if self.humanHand.selectedPokerHandType and self.humanHand:numberSelected() > 0 then
        		local rx, ry, rw, rh = self.humanHand:getRect()
-        	love.graphics.print(self.humanHand.selectedPokerHandType,
-        		(ww / 2) - _G.uiFont:getWidth(self.humanHand.selectedPokerHandType) / 2,
-         		ry - _G.uiFont:getHeight()*2.0)
+			local tx = (ww / 2) - _G.uiFont:getWidth(self.humanHand.selectedPokerHandType) / 2
+			local ty = ry - _G.uiFont:getHeight()*2.0
+			love.graphics.print(self.humanHand.selectedPokerHandType, tx, ty)
         end
 		love.graphics.print(_G.Gin.state,
 			(ww / 2) - _G.uiFont:getWidth(_G.Gin.state) / 2,

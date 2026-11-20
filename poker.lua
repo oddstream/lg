@@ -3,7 +3,21 @@
 -- local bit = require 'plugin.bit'  -- http://bitop.luajit.org/
 --
 -- https://en.wikipedia.org/wiki/List_of_poker_hands
--- TODO check and adjust to cope with 1 .. 5 cards, not just 5
+
+local poker = {}
+
+poker.handScore = {
+  ['Royal Flush'] = {uk=30, us=100},
+  ['Straight Flush'] = {uk=30, us=75},
+  ['Four of a Kind'] = {uk=16, us=50},
+  ['Full House'] = {uk=10, us=25},
+  ['Flush'] = {uk=5, us=20},
+  ['Straight'] = {uk=12, us=15},
+  ['Three of a Kind'] = {uk=6, us=10},
+  ['Two Pair'] = {uk=3, us=5},
+  ['One Pair'] = {uk=1, us=2},
+  ['High Card'] = {uk=0, us=0},
+}
 
 ---@param map integer
 ---@return boolean
@@ -106,22 +120,7 @@ end
 
 ---@param arr table
 ---@return string|nil
-local function pokerHandType(arr) -- an array of cards
-	-- if #arr ~= 5 then
-	-- 	return nil
-	-- end
-    --[[
-  local bits = {1,2,4,8,16,32,64,128,256,512,1024,2048,4096}
-  assert(#bits==13)
-  local histogram = {0,0,0,0,0,0,0,0,0,0,0,0,0}
-  assert(#histogram==13)
-  local map = 0
-  for i=1,5 do
-    local o = arr[i].ord
-    map = bit.bor(map, bits[o])
-    histogram[o] = histogram[o] + 1
-  end
-]]
+function poker.handType(arr) -- an array of cards
     -- histogram array contains counts of each card ordinal in arr
 	-- so if there are five 2's, then histogram would be [0,5,0,0..]
 	local histogram = {0,0,0,0,0,0,0,0,0,0,0,0,0,0}
@@ -174,221 +173,62 @@ local function pokerHandType(arr) -- an array of cards
 	end
 end
 
-local pokerHandScore = {
-  ['Royal Flush'] = {uk=30, us=100},
-  ['Straight Flush'] = {uk=30, us=75},
-  ['Four of a Kind'] = {uk=16, us=50},
-  ['Full House'] = {uk=10, us=25},
-  ['Flush'] = {uk=5, us=20},
-  ['Straight'] = {uk=12, us=15},
-  ['Three of a Kind'] = {uk=6, us=10},
-  ['Two Pair'] = {uk=3, us=5},
-  ['One Pair'] = {uk=1, us=2},
-  ['High Card'] = {uk=0, us=0},
-}
+function poker.handType5(cards)
+    local n = #cards
+    assert(n >= 1 and n <= 5, "expected 1 to 5 cards")
 
-local royalFlush = {
-	{suit='♣', ord=14},
-	{suit='♣', ord=13},
-	{suit='♣', ord=12},
-	{suit='♣', ord=11},
-	{suit='♣', ord=10},
-}
+    local counts = {}
+    local sameSuit = true
+    local firstSuit = cards[1].suit
 
-local straightFlush = {
-	{suit='♣', ord=9},
-	{suit='♣', ord=8},
-	{suit='♣', ord=7},
-	{suit='♣', ord=6},
-	{suit='♣', ord=5},
-}
-local fullHouse = {
-	{suit='♣', ord=14},
-	{suit='♦', ord=14},
-	{suit='♥', ord=3},
-	{suit='♠', ord=3},
-	{suit='♣', ord=3},
-}
+    for i = 1, n do
+        local rank = cards[i].ord
+        assert(type(rank) == "number" and rank >= 2 and rank <= 14,
+               "ordinal must be a number from 2 to 14")
+        counts[rank] = (counts[rank] or 0) + 1
+        if cards[i].suit ~= firstSuit then
+            sameSuit = false
+        end
+    end
 
-local flush = {
-	{suit='♣', ord=14},
-	{suit='♣', ord=13},
-	{suit='♣', ord=10},
-	{suit='♣', ord=3},
-	{suit='♣', ord=2},
-}
+    local groups = {}
+    for _, count in pairs(counts) do
+        groups[#groups + 1] = count
+    end
+    table.sort(groups, function(a, b) return a > b end)
 
-local straight = {
-	{suit='♣', ord=14},
-	{suit='♦', ord=13},
-	{suit='♥', ord=12},
-	{suit='♠', ord=11},
-	{suit='♣', ord=10},
-}
+    local royal, straight = false, false
+    if n == 5 and #groups == 5 then
+        local ranks = {}
+        for rank in pairs(counts) do
+            ranks[#ranks + 1] = rank
+        end
+        table.sort(ranks)	-- sort into AScending order
 
-local four = {
-	{suit='♣', ord=5},
-	{suit='♦', ord=14},
-	{suit='♥', ord=5},
-	{suit='♠', ord=5},
-	{suit='♣', ord=5},
-}
-
-local three = {
-	{suit='♣', ord=5},
-	{suit='♦', ord=14},
-	{suit='♥', ord=5},
-	{suit='♠', ord=11},
-	{suit='♣', ord=5},
-}
-
-local twoPair = {
-	{suit='♣', ord=14},
-	{suit='♦', ord=14},
-	{suit='♥', ord=7},
-	{suit='♠', ord=3},
-	{suit='♣', ord=3},
-}
-
-local onePair = {
-	{suit='♣', ord=14},
-	{suit='♦', ord=14},
-	{suit='♥', ord=7},
-	{suit='♠', ord=6},
-	{suit='♣', ord=3},
-}
-
-local highCard = {
-	{suit='♣', ord=14},
-	{suit='♦', ord=10},
-	{suit='♥', ord=7},
-	{suit='♠', ord=6},
-	{suit='♣', ord=3},
-}
-
-local shortPair = {
-	{suit='♣', ord=10},
-	{suit='♦', ord=10},
-	{suit='♥', ord=7},
-}
-local longHandRoyalFlush = {
-	{suit='♣', ord=1},
-	{suit='♣', ord=14},
-	{suit='♣', ord=13},
-	{suit='♣', ord=12},
-	{suit='♣', ord=11},
-	{suit='♣', ord=10},
-	{suit='♣', ord=7},
-}
-local longHandFullHouse = {
-	{suit='♣', ord=11},
-	{suit='♦', ord=10},
-	{suit='♦', ord=7},
-	{suit='♦', ord=10},
-	{suit='♦', ord=8},
-	{suit='♦', ord=7},
-	{suit='♣', ord=10},
-}
-local longHandFlush = {
-	{suit='♣', ord=11},
-	{suit='♦', ord=10},
-	{suit='♦', ord=9},
-	{suit='♦', ord=8},
-	{suit='♦', ord=2},
-	{suit='♦', ord=7},
-	{suit='♣', ord=13},
-}
-local longHandStraight = {
-	{suit='♦', ord=2},
-	{suit='♣', ord=11},
-	{suit='♦', ord=10},
-	{suit='♣', ord=9},
-	{suit='♦', ord=8},
-	{suit='♦', ord=7},
-	{suit='♣', ord=13},
-}
-local longHandTwoPair = {
-	{suit='♦', ord=11},
-	{suit='♣', ord=11},
-	{suit='♦', ord=10},
-	{suit='♣', ord=9},
-	{suit='♦', ord=9},
-	{suit='♦', ord=7},
-	{suit='♣', ord=7},
-}
-local singleCard = {
-	{suit='♣', ord=10},
-}
-
-print('Royal Flush', pokerHandType(royalFlush))
-print('Straight Flush', pokerHandType(straightFlush))
-print('Four of a Kind', pokerHandType(four))
-print('Full House', pokerHandType(fullHouse))
-print('Flush', pokerHandType(flush))
-print('Straight', pokerHandType(straight))
-print('Three of a Kind', pokerHandType(three))
-print('Two Pair', pokerHandType(twoPair))
-print('Pair', pokerHandType(onePair))
-print('High Card', pokerHandType(highCard))
-
-print('Short One Pair', pokerHandType(shortPair))
-print('Long Royal Flush', pokerHandType(longHandRoyalFlush))
-print('Long Full House', pokerHandType(longHandFullHouse))
-print('Long Flush', pokerHandType(longHandFlush))
-print('Long Straight', pokerHandType(longHandStraight))
-print('Long Two Pair', pokerHandType(longHandTwoPair))
-print('Single Card', pokerHandType(singleCard))
-
-function get_combinations(cards, k)
-    return coroutine.create(function()
-        local n = #cards
-        local current_hand = {}
-
-        local function generate(start_index)
-            -- Base case: we have selected k cards
-            if #current_hand == k then
-                -- Yield a copy of the current hand
-                local copy = {}
-                for i = 1, k do
-                    copy[i] = current_hand[i]
-                end
-                coroutine.yield(copy)
-                return
-            end
-
-            -- Recursive step: pick the next card from the remaining pool
-            for i = start_index, n do
-                table.insert(current_hand, cards[i])
-                generate(i + 1)
-                table.remove(current_hand) -- Backtrack
+        straight = true
+        for i = 2, 5 do
+            if ranks[i] ~= ranks[i - 1] + 1 then
+                straight = false
+                break
             end
         end
 
-        generate(1)
-    end)
-end
---[[
-local function printHand(hand)
-    local str = ''
-    for i, c in ipairs(hand) do
-    	str = str .. c.suit .. c.ord .. ' '
+        if straight and ranks[5] == 14 then
+        	royal = true
+        end
     end
-	print(str)
+
+    if straight and royal and sameSuit then return "Royal Flush" end
+    if straight and sameSuit then return "Straight Flush" end
+    if groups[1] == 4 then return "Four of a Kind" end
+    if groups[1] == 3 and groups[2] == 2 then return "Full House" end
+    if sameSuit and n == 5 then return "Flush" end
+    if straight then return "Straight" end
+    if groups[1] == 3 then return "Three of a Kind" end
+    if groups[1] == 2 and groups[2] == 2 then return "Two Pair" end
+    if groups[1] == 2 then return "One Pair" end
+    return "High Card"
 end
 
-local co = get_combinations(longHand, 5)
-printHand(longHand)
-print("Generating combinations of 5 from 7:")
-local count = 0
-local bestType = ''
-local bestScore = 0
-while true do
-    local success, result = coroutine.resume(co)
-    if not success or not result then break end
-    local typ = pokerHandType(result)
-    count = count + 1
-    -- Format the table for printing
-    printHand(result)
-end
--- print(string.format("Total combinations generated: %d (expected 21)", count))
-]]
+
+return poker

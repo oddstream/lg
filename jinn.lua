@@ -5,124 +5,7 @@
 -- require caches the module’s returned value in package.loaded
 
 local log = require 'log'
-
----@param arr table
----@return boolean
-local function containsFlush(arr)
-    if #arr < 5 then return false end
-    if #arr == 5 then
-        local s = arr[1].suit
-        for i = 2, #arr do
-            if arr[i].suit ~= s then return false end
-        end
-        return true
-    end
-    if #arr > 5 then
-        local counts = {}
-        for _, c in ipairs(arr) do
-            counts[c.suit] = (counts[c.suit] or 0) + 1
-            if counts[c.suit] >= 5 then
-                return true
-            end
-        end
-        return false
-    end
-	return false
-end
-
----@param t table
----@return boolean, boolean
-local function containsStraight(t)
-	-- only works if table is sorted into decreasing .ord
-    local streak = 1
-
-    for i = 2, #t do
-        if t[i].ord == t[i - 1].ord - 1 then
-            streak = streak + 1
-            if streak == 5 then
-                return true, t[i].ord == 10
-            end
-        else
-            streak = 1
-        end
-    end
-
-    return false, false
-end
-
----@param hist integer[]
----@param n integer
----@return boolean
-local function isOfAKind(hist, n)
-	for i = 1, 14 do
-		if hist[i] == n then
-			return true
-		end
-	end
-	return false
-end
-
----@param hist integer[]
----@param n integer
----@return integer
-local function numOf(hist, n)
-	local count = 0
-	for i = 1, 14 do
-		if hist[i] == n then
-			count = count + 1
-		end
-	end
-	return count
-end
-
----@param arr Card[]
----@return string
-local function pokerHandType(arr)
-    -- only works if hand is sorted into decreasing ord (because of straight check)
-    -- histogram array contains counts of each card ordinal in arr
-	-- so if there are five 2's, then histogram would be [0,5,0,0..]
-	local histogram = {0,0,0,0,0,0,0,0,0,0,0,0,0,0}
-    assert(#histogram == 14)
-    for i = 1, #arr do
-		local o = arr[i].ord
-		histogram[o] = histogram[o] + 1
-	end
-
-	local fl = containsFlush(arr)
-    local st, royal = containsStraight(arr)
-
-	-- test in decreasing order
-	if st and fl then
-        if royal then
-			return 'Royal Flush'
-  		else
-   			return 'Straight Flush'
-		end
-	elseif isOfAKind(histogram, 4) then return 'Four of a Kind'
-	elseif isOfAKind(histogram, 3) and isOfAKind(histogram, 2) then return 'Full House'
-	elseif fl then return 'Flush'
-	elseif st then return 'Straight'
-	elseif isOfAKind(histogram, 3) then return 'Three of a Kind'
-        -- use >= not == incase there are three pair, which we don't count
-	elseif numOf(histogram, 2) >= 2 then return 'Two Pair'
-	elseif isOfAKind(histogram, 2) then return 'One Pair'
-	else return 'High Card'
-	end
-end
-
-local pokerHandScore = {
--- uk scores don't seem based on frequency - straight > flush!?
-  ['Royal Flush'] = {uk=30, us=100},
-  ['Straight Flush'] = {uk=30, us=75},
-  ['Four of a Kind'] = {uk=16, us=50},
-  ['Full House'] = {uk=10, us=25},
-  ['Flush'] = {uk=5, us=20},
-  ['Straight'] = {uk=12, us=15},
-  ['Three of a Kind'] = {uk=6, us=10},
-  ['Two Pair'] = {uk=3, us=5},
-  ['One Pair'] = {uk=1, us=2},
-  ['High Card'] = {uk=0, us=0},
-}
+local poker = require 'poker'
 
 ---@class (exact) Jinn
 ---@field __index Jinn
@@ -158,44 +41,17 @@ function Jinn.new(baize)
 end
 
 function Jinn:botHandChanged()
-    -- self.baize.botHand:log()
-	        --[[
-	local bestHandScore = 0
-    local bestHandType = 'noname'
-    local arr = {}
-    for _, c in ipairs(self.baize.botHand.cards) do
-        table.insert(arr, c)
-    end
-    for hand in sequencesOfFive(arr) do
-        local typ = pokerHandType(hand)
-		if hand and pokerHandScore[typ].us > bestHandScore then
-            bestHandScore = pokerHandScore[typ].us
-			bestHandType = typ
-		end
-	end
-	self.baize.botHand.selectedPokerHandType = bestHandType
-	]]
 	self.baize.botHand:sort()
-	local arr = {}
-    for _, c in ipairs(self.baize.botHand.cards) do
-        table.insert(arr, c)
-    end
-	-- self.baize.botHand.selectedPokerHandType = pokerHandType(arr)
-	self.baize.botHand.selectedPokerHandType = nil
-	self.baize.botHand:fan()
+    self.baize.botHand:fan()
+	local arr = self.baize.botHand:createCopy('all')
+	self.baize.botHand.selectedPokerHandType = poker.handType(arr)
 end
 
 function Jinn:humanHandChanged()
     self.baize.humanHand:sort()
-	local arr = {}
-    for _, c in ipairs(self.baize.humanHand.cards) do
-        if c.selected then
-            table.insert(arr, c)
-        end
-    end
-    self.baize.humanHand.selectedPokerHandType = pokerHandType(arr)
-    -- log.info(#arr, 'cards selected', self.baize.humanHand.selectedPokerHandType)
     self.baize.humanHand:fan()
+	local arr = self.baize.humanHand:createCopy('selected')
+    self.baize.humanHand.selectedPokerHandType = poker.handType(arr)
 end
 
 ---@param card Card
@@ -259,7 +115,7 @@ function Jinn:play()
     for _, c in ipairs(self.baize.botHand.cards) do
         table.insert(arr, c)
     end
-    self.baize.botHand.selectedPokerHandType = pokerHandType(arr)
+    self.baize.botHand.selectedPokerHandType = poker.handType(arr)
 
     arr = {}
     for _, c in ipairs(self.baize.humanHand.cards) do
@@ -267,7 +123,7 @@ function Jinn:play()
             table.insert(arr, c)
         end
     end
-    self.baize.humanHand.selectedPokerHandType = pokerHandType(arr)
+    self.baize.humanHand.selectedPokerHandType = poker.handType(arr)
 
     self.state = 'cashout'
 end
@@ -275,8 +131,8 @@ end
 function Jinn:cashout()
     -- player has pressed the cashout button
     -- update coins and return to setup state
-    local botScore = pokerHandScore[self.baize.botHand.selectedPokerHandType].us
-    local humanScore = pokerHandScore[self.baize.humanHand.selectedPokerHandType].us
+    local botScore = poker.handScore[self.baize.botHand.selectedPokerHandType].us
+    local humanScore = poker.handScore[self.baize.humanHand.selectedPokerHandType].us
 
     if botScore > humanScore then
         log.info('bot wins', self.baize.botHand.selectedPokerHandType, 'better than',
@@ -319,16 +175,49 @@ function Jinn:action()
         self.baize.cashoutButton.state = 'hidden'
         -- waiting for player to discard, do nothing
     elseif self.state == 'botDraw' then
-        -- move a card from stock/discard to botHand
-        -- for now, draw card from stock
-        self.baize.botHand:push(self.baize.stock:pop())
+        -- move a card from stock or discard to botHand
+        -- create a copy of hand, add stock card, test
+        -- create a copy of hand, add discard card, test
+        -- use best source
+        local arr = self.baize.botHand:createCopy('all')
+        local c = self.baize.stock:peek()
+        assert(c)
+        table.insert(arr, {ord=c.ord, suit=c.suit})
+        local stockScore = poker.handScore[poker.handType(arr)].us
+
+        arr = self.baize.botHand:createCopy('all')
+        c = self.baize.discard:peek()
+        assert(c)
+        table.insert(arr, {ord=c.ord, suit=c.suit})
+        local discardScore = poker.handScore[poker.handType(arr)].us
+        
+        if stockScore > discardScore then
+            self.baize.botHand:push(self.baize.stock:pop())
+        else
+            self.baize.botHand:push(self.baize.discard:pop())
+        end
         self:botHandChanged()
         self.state = 'botDiscard'
     elseif self.state == 'botDiscard' then
-        -- for now, move a random card from botHand to discard
-        -- local n = math.random(#self.baize.botHand.cards)
-        -- local c = self.baize.botHand:remove(n)
-        local c = self.baize.botHand:pop()
+        local arr = self.baize.botHand:createCopy('all')
+        local bestScore = poker.handScore[poker.handType(arr)].us
+        local discardIndex = 1
+        for i = 1, #arr do
+            local arr2 = {}
+            for j = 1, #arr do
+                if i ~= j then
+                    table.insert(arr2, arr[j])
+                end
+            end
+            local score2 = poker.handScore[poker.handType(arr2)].us
+            -- discarding a card cannot make the hand score better
+            -- so settle for not making it worse
+            if score2 == bestScore then
+                discardIndex = i
+                break
+            end
+        end
+        local c = self.baize.botHand:remove(discardIndex)
         self.baize.discard:push(c)
         self:botHandChanged()
         self.baize.playButton.state = 'disabled'

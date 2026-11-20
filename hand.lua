@@ -20,6 +20,7 @@ local Util = require 'util'
 ---@field getRect function
 ---@field repositionCards function
 ---@field numberSelected function
+---@field createCopy function
 ---@field update function(dt_seconds:number)
 
 local Hand = {}
@@ -131,13 +132,12 @@ function Hand:layout(r)
         return
     end
     self.x = r.x + (r.width / 2) - (self:getWidth() / 2)
-
+    local gap = _G.SETTINGS.cardHeight / 4
     if self.playerName == _G.SETTINGS.humanName then
-        self.y = r.height - _G.SETTINGS.cardHeight - (_G.SETTINGS.cardHeight / 4)
+        self.y = r.y + r.height - _G.SETTINGS.cardHeight - gap
     else
-        self.y = (_G.SETTINGS.cardHeight / 4)
+        self.y = r.y + gap
     end
-    -- log.trace("Hand:layout()", self, self.x, self.y)
     self:repositionCards()
 end
 
@@ -182,6 +182,26 @@ function Hand:numberSelected()
     	if c.selected then n = n + 1 end
     end
     return n
+end
+
+--- create a copy of this hand's cards, for passing to poker type function
+---@param what string 'all'|'selected'|nil
+---@return table
+function Hand:createCopy(what)
+    what = what or 'all'
+    local arr = {}
+    if what == 'selected' then
+        for _, c in ipairs(self.cards) do
+            if c.selected then
+                table.insert(arr, {ord=c.ord, suit=c.suit})
+            end
+        end
+    else
+        for _, c in ipairs(self.cards) do
+            table.insert(arr, {ord=c.ord, suit=c.suit})
+        end
+    end
+    return arr
 end
 
 -- update, draw handled by Pile

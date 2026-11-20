@@ -73,12 +73,11 @@ end
 
 ---@param r Rect
 function Stock:layout(r)
-    self.x = (r.width / 2) - (_G.SETTINGS.cardWidth / 2)
-    self.y = (r.height / 2) - (_G.SETTINGS.cardHeight / 2)
+    self.x = r.x + (r.width / 2) - (_G.SETTINGS.cardWidth / 2)
+    self.y = r.y + (r.height / 2) - (_G.SETTINGS.cardHeight / 2)
 
     self.x = self.x - (_G.SETTINGS.cardWidth * 0.75)
     self:repositionCards()
-    -- log.trace("Stock:layout()", self, self.x, self.y)
 end
 
 -- update, draw handled by Pile
