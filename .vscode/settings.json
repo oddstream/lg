@@ -1,5 +1,6 @@
 {
-	"editor.fontFamily": "Liberation Mono",
+	"editor.fontFamily": "Hack",
+	// "editor.fontFamily": "Liberation Mono",
 	// "editor.fontFamily": "Roboto Mono",
 	// "editor.fontFamily": "JetBrains Mono",
 	// "editor.fontFamily": "CommitMono",
@@ -8,7 +9,6 @@
 	// "editor.fontFamily": "DejaVu Sans Mono",
 	// "editor.fontFamily": "Fira Code",
 	// "editor.fontFamily": "Fira Code Retina",
-	// "editor.fontFamily": "Hack",
 	// "editor.fontFamily": "Ubuntu Mono",
 	// "editor.fontFamily": "Droid Sans Mono",
 	// "editor.fontFamily": "Inconsolata",

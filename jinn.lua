@@ -6,11 +6,12 @@
 
 local log = require 'log'
 local poker = require 'poker'
+local Card  = require 'card'
 
 ---@class (exact) Jinn
 ---@field __index Jinn
 ---@field __tostring function
----@field state string
+---@field state string 'setup'|'humanDraw'|'humanDiscard'|'botDraw'|'botDiscard'|'cashout'
 ---@field baize table
 ---@field new function
 ---@field isAllowed function
@@ -20,14 +21,6 @@ local poker = require 'poker'
 
 local Jinn = {}
 Jinn.__index = Jinn
-
-local state = {
-    'setup',
-    'humanDraw',   -- from stock or discard
-    'humanDiscard',-- to discard
-    'botDraw',
-    'botDiscard',
-}
 
 ---@return string
 function Jinn:__tostring()
@@ -106,24 +99,15 @@ end
 function Jinn:play()
     -- human or bot has pressed the play button
     -- show bot cards and hand type
-    -- hide play button
-    -- show cashout button
+    -- goto cashout state
     for _, c in ipairs(self.baize.botHand.cards) do
         c:flipUp()
     end
 
-    local arr = {}
-    for _, c in ipairs(self.baize.botHand.cards) do
-        table.insert(arr, c)
-    end
+    local arr = self.baize.botHand:createCopy('all')
     self.baize.botHand.selectedPokerHandType = poker.handType(arr)
 
-    arr = {}
-    for _, c in ipairs(self.baize.humanHand.cards) do
-        if c.selected then
-            table.insert(arr, c)
-        end
-    end
+    arr = self.baize.humanHand:createCopy('selected')
     self.baize.humanHand.selectedPokerHandType = poker.handType(arr)
 
     self.state = 'cashout'
@@ -146,7 +130,7 @@ function Jinn:cashout()
     else
         log.info('draw')
     end
-    log.info('bot has', self.botCoin, 'coin, human has', self.humanCoin, 'coin')
+    -- log.info('bot has', self.botCoin, 'coin, human has', self.humanCoin, 'coin')
 
     self.state = 'setup'
 end
@@ -178,20 +162,13 @@ function Jinn:action()
         self.baize.cashoutButton.state = 'hidden'
         -- waiting for player to discard, do nothing
     elseif self.state == 'botDraw' then
-        -- cheat: if bot hand > human hand, then play
-        local botPlays = false
-        local arr = self.baize.humanHand:createCopy('selected')
-        if #arr > 0 then
-            -- human is in the game
-            local humanScore = poker.handScore[poker.handType(arr)].us
-            arr = self.baize.botHand:createCopy('all')
-            local botScore = poker.handScore[poker.handType(arr)].us
-            log.trace('scores: bot:', botScore, 'human:', humanScore)
-            if botScore > humanScore then
-                botPlays = true
-            end
-        end
-        if botPlays then
+        -- cheat: if bot hand > possible human hand, then play
+        local arr = self.baize.humanHand:createCopy('all')
+        local humanScore = poker.handScore[poker.handType(arr)].us
+        arr = self.baize.botHand:createCopy('all')
+        local botScore = poker.handScore[poker.handType(arr)].us
+        log.trace('scores: bot:', botScore, 'human:', humanScore)
+        if botScore > humanScore then
             self:play()
         else
             -- move a card from stock or discard to botHand

@@ -98,7 +98,7 @@ function Baize.new()
 		y = 0,
 		width = _G.SETTINGS.cardHeight,
 		height = _G.SETTINGS.cardWidth,
-		backColor = 'DarkGreen',
+		-- backColor = 'DarkGreen',
 		foreColor = 'Ivory',
 		state = 'active',
 	})
@@ -107,7 +107,7 @@ function Baize.new()
 		y = 0,
 		width = _G.SETTINGS.cardHeight,
 		height = _G.SETTINGS.cardWidth,
-		backColor = 'DarkGreen',
+		-- backColor = 'DarkGreen',
 		foreColor = 'Ivory',
 		state = 'active',
 	})
@@ -116,7 +116,7 @@ function Baize.new()
 		y = 0,
 		width = _G.SETTINGS.cardHeight,
 		height = _G.SETTINGS.cardWidth,
-		backColor = 'DarkGreen',
+		-- backColor = 'DarkGreen',
 		foreColor = 'Ivory',
 		state = 'active',
 	})
