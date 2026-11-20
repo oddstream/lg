@@ -43,8 +43,9 @@ end
 function Jinn:botHandChanged()
 	self.baize.botHand:sort()
     self.baize.botHand:fan()
-	local arr = self.baize.botHand:createCopy('all')
-	self.baize.botHand.selectedPokerHandType = poker.handType(arr)
+    -- uncomment this to always display bot hand type
+	-- local arr = self.baize.botHand:createCopy('all')
+	-- self.baize.botHand.selectedPokerHandType = poker.handType(arr)
 end
 
 function Jinn:humanHandChanged()
@@ -78,7 +79,7 @@ end
 ---@param from Pile
 ---@param to Pile
 function Jinn:notifyCardMove(card, from, to)
-    log.trace('notifyCardMove', self.state, card, from, to)
+    -- log.trace('notifyCardMove', self.state, card, from, to)
     if self.state == 'humanDraw'
         and (from == self.baize.stock or from == self.baize.discard)
         and to == self.baize.humanHand
@@ -103,12 +104,12 @@ function Jinn:notifyCardTapped(card)
 end
 
 function Jinn:play()
-    -- player has pressed the play button
+    -- human or bot has pressed the play button
     -- show bot cards and hand type
     -- hide play button
     -- show cashout button
     for _, c in ipairs(self.baize.botHand.cards) do
-        c:flip()
+        c:flipUp()
     end
 
     local arr = {}
@@ -160,6 +161,8 @@ function Jinn:action()
         self.baize.roundLabel.text = string.format('Round %d', self.round)
         self.baize.botScoreLabel.text = string.format('Bot $%d', self.botCoin)
         self.baize.humanScoreLabel.text = string.format('You $%d', self.humanCoin)
+        self.baize.botHand.selectedPokerHandType = nil
+        self.baize.humanHand.selectedPokerHandType = nil
         self.baize.playButton.state = 'disabled'
         self.baize.cashoutButton.state = 'hidden'
         self.state = 'humanDraw'
@@ -175,29 +178,46 @@ function Jinn:action()
         self.baize.cashoutButton.state = 'hidden'
         -- waiting for player to discard, do nothing
     elseif self.state == 'botDraw' then
-        -- move a card from stock or discard to botHand
-        -- create a copy of hand, add stock card, test
-        -- create a copy of hand, add discard card, test
-        -- use best source
-        local arr = self.baize.botHand:createCopy('all')
-        local c = self.baize.stock:peek()
-        assert(c)
-        table.insert(arr, {ord=c.ord, suit=c.suit})
-        local stockScore = poker.handScore[poker.handType(arr)].us
-
-        arr = self.baize.botHand:createCopy('all')
-        c = self.baize.discard:peek()
-        assert(c)
-        table.insert(arr, {ord=c.ord, suit=c.suit})
-        local discardScore = poker.handScore[poker.handType(arr)].us
-        
-        if stockScore > discardScore then
-            self.baize.botHand:push(self.baize.stock:pop())
-        else
-            self.baize.botHand:push(self.baize.discard:pop())
+        -- cheat: if bot hand > human hand, then play
+        local botPlays = false
+        local arr = self.baize.humanHand:createCopy('selected')
+        if #arr > 0 then
+            -- human is in the game
+            local humanScore = poker.handScore[poker.handType(arr)].us
+            arr = self.baize.botHand:createCopy('all')
+            local botScore = poker.handScore[poker.handType(arr)].us
+            log.trace('scores: bot:', botScore, 'human:', humanScore)
+            if botScore > humanScore then
+                botPlays = true
+            end
         end
-        self:botHandChanged()
-        self.state = 'botDiscard'
+        if botPlays then
+            self:play()
+        else
+            -- move a card from stock or discard to botHand
+            -- create a copy of hand, add stock card, test
+            -- create a copy of hand, add discard card, test
+            -- use best source
+            local arr = self.baize.botHand:createCopy('all')
+            local c = self.baize.stock:peek()
+            assert(c)
+            table.insert(arr, {ord=c.ord, suit=c.suit})
+            local stockScore = poker.handScore[poker.handType(arr)].us
+
+            arr = self.baize.botHand:createCopy('all')
+            c = self.baize.discard:peek()
+            assert(c)
+            table.insert(arr, {ord=c.ord, suit=c.suit})
+            local discardScore = poker.handScore[poker.handType(arr)].us
+            
+            if stockScore > discardScore then
+                self.baize.botHand:push(self.baize.stock:pop())
+            else
+                self.baize.botHand:push(self.baize.discard:pop())
+            end
+            self:botHandChanged()
+            self.state = 'botDiscard'
+        end
     elseif self.state == 'botDiscard' then
         local arr = self.baize.botHand:createCopy('all')
         local bestScore = poker.handScore[poker.handType(arr)].us
