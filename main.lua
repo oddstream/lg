@@ -1,6 +1,7 @@
 -- main.lua
 
 require 'settings'
+local log = require 'log'
 require 'cardfactory'
 
 local scenes = require 'scenes'
@@ -53,7 +54,9 @@ function love.load(args)
 
 	stage = scenes.new()
 
-	_G.SETTINGS.Calculate()
+	local ww, wh, _ = love.window.getMode()
+	log.trace('load, initial window size', ww, wh)
+	_G.SETTINGS.resize(ww, wh)
 	_G.cardFaceTextures, _G.cardBackTexture, _G.cardShadowTexture = cardTextureFactory()
 	assert(_G.cardFaceTextures)
 	assert(type(_G.cardFaceTextures) == 'table')
@@ -94,7 +97,7 @@ function love.keypressed(key)
 end
 
 function love.resize(w, h)
-  _G.SETTINGS.Calculate()
+  _G.SETTINGS.resize(w, h)
   _G.cardFaceTextures, _G.cardBackTexture, _G.cardShadowTexture = cardTextureFactory()
   stage:resize(w, h)
 end

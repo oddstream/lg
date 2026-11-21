@@ -13,7 +13,7 @@ _G.SETTINGS = {
     cardRoundness = 200 / 10,
     cardRadius = 200 / 1.444 / 10,    -- cardWidth / 10
 
-    aniSpeed = 0.75,
+    aniSpeed = 0.5,
 
     botName = 'GinBot',
     humanName = 'Gilbert',
@@ -28,10 +28,7 @@ _G.SETTINGS = {
     }
 }
 
-_G.SETTINGS.Calculate = function()
-    -- set the card size to allow 12 cards to fit across the width of the window
-    -- hand is 10 + 1 so 12 will leave margins
-	local ww, wh, _ = love.window.getMode()
+_G.SETTINGS.resize = function(ww, wh)
     -- _G.SETTINGS.cardHeight = wh / 4
     -- _G.SETTINGS.cardWidth = _G.SETTINGS.cardHeight / _G.SETTINGS.cardRatioPortrait
     _G.SETTINGS.cardWidth = ww / 12

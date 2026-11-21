@@ -181,7 +181,8 @@ end
 ---@param w integer
 ---@param h integer
 function Pile:resize(w, h)
-	-- do nothing, leave to subclasses
+	self.width = _G.SETTINGS.cardWidth
+	self.height = _G.SETTINGS.cardHeight
 end
 
 function Pile:draw()

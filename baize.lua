@@ -67,9 +67,9 @@ function Baize.new()
 	log.info('created', #o.stock.cards, 'cards')
 	o.discard = Discard.new()
 
-	o.botHand = Hand.new(_G.SETTINGS.botName)
+	o.botHand = Hand.new(_G.SETTINGS.botName, 1, 8)
 
-	o.humanHand = Hand.new(_G.SETTINGS.humanName)
+	o.humanHand = Hand.new(_G.SETTINGS.humanName, -1, 7)
 
 	o.playButton = Button.new({
 		x = 0,
@@ -158,12 +158,13 @@ function Baize:deal()
 	-- shuffle stock
 	self.stock:shuffle()
 	-- deal
-	for _ = 1, 7 do
-		self.humanHand:push(self.stock:pop())
+	for _ = 1, self.botHand.size do
 		self.botHand:push(self.stock:pop())
 	end
+	for _ = 1, self.humanHand.size do
+		self.humanHand:push(self.stock:pop())
+	end
 	self.discard:push(self.stock:pop())
-	assert(#self.stock.cards == 52 - 7 - 7 - 1)
 
 	self:resize(love.graphics.getWidth(), love.graphics.getHeight())
 end
@@ -379,11 +380,6 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
                 	log.warn('cannot select more than 5 cards')
                 else
                     card:toggleSelect()
-                   	-- if card.selected then
-                  		-- card:setPosition(card.x, card.y - (_G.SETTINGS.cardHeight * 0.15))
-                   	-- else
-                  		-- card:setPosition(card.x, card.y + (_G.SETTINGS.cardHeight * 0.15))
-                    -- end
                   	_G.Gin:notifyCardTapped(card)
                 end
             else
@@ -448,6 +444,7 @@ function Baize:resize(w, h)
 	_G.uiFont = love.graphics.newFont(_G.ORD_FONT, _G.SETTINGS.cardWidth / 4)
 
 	for _, p in ipairs({self.stock, self.discard, self.botHand, self.humanHand}) do
+		p:resize(w, h)
 		p:layout(self.cardRect)
 		p:fan()
 	end
@@ -555,19 +552,19 @@ function Baize:draw()
 
         if self.botHand.selectedPokerHandType then
       		local rx, ry, rw, rh = self.botHand:getRect()
-        	love.graphics.print(self.botHand.selectedPokerHandType,
-        		(ww / 2) - _G.uiFont:getWidth(self.botHand.selectedPokerHandType) / 2,
-         		ry + rh + _G.uiFont:getHeight()/2)
+			local gap = _G.SETTINGS.cardHeight / 3
+			Util.printCentered(self.botHand.selectedPokerHandType,
+				rx, ry + rh + gap, rw, _G.uiFont:getLineHeight())
         end
         if self.humanHand.selectedPokerHandType and self.humanHand:numberSelected() > 0 then
        		local rx, ry, rw, rh = self.humanHand:getRect()
-			local tx = (ww / 2) - _G.uiFont:getWidth(self.humanHand.selectedPokerHandType) / 2
-			local ty = ry - _G.uiFont:getHeight()*2.0
-			love.graphics.print(self.humanHand.selectedPokerHandType, tx, ty)
+			local gap = _G.SETTINGS.cardHeight / 3
+			Util.printCentered(self.humanHand.selectedPokerHandType,
+				rx, ry - gap, rw, _G.uiFont:getLineHeight())
         end
-		love.graphics.print(_G.Gin.state,
-			(ww / 2) - _G.uiFont:getWidth(_G.Gin.state) / 2,
-			wh - _G.uiFont:getHeight())
+		-- love.graphics.print(_G.Gin.state,
+		-- 	(ww / 2) - _G.uiFont:getWidth(_G.Gin.state) / 2,
+		-- 	wh - _G.uiFont:getHeight())
 	end
 end
 

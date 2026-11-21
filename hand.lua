@@ -10,6 +10,8 @@ local Util = require 'util'
 ---@field __index Hand
 ---@field __tostring function
 ---@field playerName string
+---@field direction number
+---@field size integer
 ---@field selectedPokerHandType string
 ---@field new function
 ---@field setPosition function
@@ -33,11 +35,15 @@ function Hand:__tostring()
 end
 
 ---@param playerName string
+---@param direction number
+---@param size integer
 ---@return Hand
-function Hand.new(playerName)
+function Hand.new(playerName, direction, size)
     ---@class (exact) Hand: Pile
     local o = Pile.new()
     o.playerName = playerName
+    o.direction = direction
+    o.size = size
     return setmetatable(o, Hand)
 end
 
@@ -117,9 +123,9 @@ function Hand:getWidth()
     -- if self.cards == nil or #self.cards == 0 then
     --     return 0
     -- end
-    -- Hand piles need space for 7 + 1 cards
+    -- Hand piles need space for .size + 1 cards
     -- return (#self.cards - 1) * _G.SETTINGS.cardWidth * 0.75 + _G.SETTINGS.cardWidth
-    return (7) * _G.SETTINGS.cardWidth * 0.75 + _G.SETTINGS.cardWidth
+    return self.size * _G.SETTINGS.cardWidth * 0.75 + _G.SETTINGS.cardWidth
 end
 
 function Hand:getRect()
@@ -133,7 +139,7 @@ function Hand:layout(r)
     end
     self.x = r.x + (r.width / 2) - (self:getWidth() / 2)
     local gap = _G.SETTINGS.cardHeight / 4
-    if self.playerName == _G.SETTINGS.humanName then
+    if self.playerName == _G.SETTINGS.humanName then    -- TODO ugly
         self.y = r.y + r.height - _G.SETTINGS.cardHeight - gap
     else
         self.y = r.y + gap
@@ -150,11 +156,7 @@ function Hand:fan()
         local y = self.y
         if c.selected then
             -- lift the human card by 15%
-        	if self.playerName == _G.SETTINGS.humanName then
-        		y = y - (_G.SETTINGS.cardHeight * 0.15)
-         	else
-        		y = y + (_G.SETTINGS.cardHeight * 0.15)
-        	end
+            y = y + (_G.SETTINGS.cardHeight * 0.15) * self.direction
         end
         c:transitionTo(x, y)
         x = x + (_G.SETTINGS.cardWidth * 0.75)
@@ -204,7 +206,13 @@ function Hand:createCopy(what)
     return arr
 end
 
--- update, draw handled by Pile
+--- override base class Pile:resize() because Hand is wider than a stacked Pile
+---@param w integer
+---@param h integer
+function Hand:resize(w, h)
+	self.width = self:getWidth()
+	self.height = _G.SETTINGS.cardHeight
+end
 
 function Hand:draw()
     Util.setColor('DarkGreen')

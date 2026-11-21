@@ -4,10 +4,12 @@ local log = require 'log'
 
 local Pile = require 'pile'
 local Card = require 'card'
+local Util = require 'util'
 
 ---@class (exact) Stock: Pile
 ---@field __index Stock
 ---@field __tostring function
+---@field sizeFont love.Font
 ---@field new function
 ---@field fill function
 ---@field shuffle function
@@ -71,6 +73,13 @@ function Stock:tapped(c)
 end
 ]]
 
+---@param w integer
+---@param h integer
+function Stock:resize(w, h)
+    Pile.resize(self, w, h) -- call base class resize()
+    self.sizeFont = nil
+end
+
 ---@param r Rect
 function Stock:layout(r)
     self.x = r.x + (r.width / 2) - (_G.SETTINGS.cardWidth / 2)
@@ -80,6 +89,16 @@ function Stock:layout(r)
     self:repositionCards()
 end
 
--- update, draw handled by Pile
+function Stock:draw()
+    if self.sizeFont == nil then
+        self.sizeFont = love.graphics.newFont(_G.SUIT_FONT, _G.SETTINGS.cardHeight / 8)
+    end
+    love.graphics.setFont(self.sizeFont)
+    Util.setColor('Ivory')
+    -- assert(self.width and type(self.width)=='number' and self.width == _G.SETTINGS.cardWidth)
+    -- assert(self.height and type(self.height)=='number' and self.height == _G.SETTINGS.cardHeight)
+    local gap = _G.SETTINGS.cardHeight / 8
+    Util.printCentered(tostring(#self.cards), self.x, self.y + self.height + gap, self.width, self.sizeFont:getLineHeight())
+end
 
 return Stock

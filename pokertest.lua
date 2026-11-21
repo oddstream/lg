@@ -2,6 +2,14 @@
 
 local poker = require 'poker'
 
+local function printHand(hand)
+    local str = ''
+    for _, c in ipairs(hand) do
+    	str = str .. c.suit .. c.ord .. ' '
+    end
+	print(str)
+end
+
 local royalFlush = {
 	{suit='♣', ord=14},
 	{suit='♣', ord=13},
@@ -87,7 +95,7 @@ local shortPair = {
 	{suit='♥', ord=7},
 }
 local longHandRoyalFlush = {
-	{suit='♣', ord=1},
+	{suit='♣', ord=2},
 	{suit='♣', ord=14},
 	{suit='♣', ord=13},
 	{suit='♣', ord=12},
@@ -135,77 +143,36 @@ local singleCard = {
 	{suit='♣', ord=10},
 }
 
-print('Royal Flush', poker.handType5(royalFlush))
-print('Straight Flush', poker.handType5(straightFlush))
-print('Four of a Kind', poker.handType5(four))
-print('Full House', poker.handType5(fullHouse))
-print('Flush', poker.handType5(flush))
-print('Straight', poker.handType5(straight))
-print('Three of a Kind', poker.handType5(three))
-print('Two Pair', poker.handType5(twoPair))
-print('Pair', poker.handType5(onePair))
-print('High Card', poker.handType5(highCard))
-
 --[[
-print('Short One Pair', pokerHandType(shortPair))
-print('Long Royal Flush', pokerHandType(longHandRoyalFlush))
-print('Long Full House', pokerHandType(longHandFullHouse))
-print('Long Flush', pokerHandType(longHandFlush))
-print('Long Straight', pokerHandType(longHandStraight))
-print('Long Two Pair', pokerHandType(longHandTwoPair))
-print('Single Card', pokerHandType(singleCard))
+print('Royal Flush', poker.handType(royalFlush))
+print('Straight Flush', poker.handType(straightFlush))
+print('Four of a Kind', poker.handType(four))
+print('Full House', poker.handType(fullHouse))
+print('Flush', poker.handType(flush))
+print('Straight', poker.handType(straight))
+print('Three of a Kind', poker.handType(three))
+print('Two Pair', poker.handType(twoPair))
+print('Pair', poker.handType(onePair))
+print('High Card', poker.handType(highCard))
+
+print('Short One Pair', poker.handType(shortPair))
+print('Long Royal Flush', poker.handType(longHandRoyalFlush))
+print('Long Full House', poker.handType(longHandFullHouse))
+print('Long Flush', poker.handType(longHandFlush))
+print('Long Straight', poker.handType(longHandStraight))
+print('Long Two Pair', poker.handType(longHandTwoPair))
+print('Single Card', poker.handType(singleCard))
 ]]
 
-function get_combinations(cards, k)
-    return coroutine.create(function()
-        local n = #cards
-        local current_hand = {}
+local t,s,h = poker.handTypeEx(longHandRoyalFlush)
+printHand(longHandRoyalFlush)
+print(t)
+print(s)
+printHand(h)
 
-        local function generate(start_index)
-            -- Base case: we have selected k cards
-            if #current_hand == k then
-                -- Yield a copy of the current hand
-                local copy = {}
-                for i = 1, k do
-                    copy[i] = current_hand[i]
-                end
-                coroutine.yield(copy)
-                return
-            end
+t,s,h = poker.handTypeEx(shortPair)
+printHand(shortPair)
+print(t)
+print(s)
+printHand(h)
 
-            -- Recursive step: pick the next card from the remaining pool
-            for i = start_index, n do
-                table.insert(current_hand, cards[i])
-                generate(i + 1)
-                table.remove(current_hand) -- Backtrack
-            end
-        end
-
-        generate(1)
-    end)
-end
---[[
-local function printHand(hand)
-    local str = ''
-    for i, c in ipairs(hand) do
-    	str = str .. c.suit .. c.ord .. ' '
-    end
-	print(str)
-end
-
-local co = get_combinations(longHand, 5)
-printHand(longHand)
-print("Generating combinations of 5 from 7:")
-local count = 0
-local bestType = ''
-local bestScore = 0
-while true do
-    local success, result = coroutine.resume(co)
-    if not success or not result then break end
-    local typ = pokerHandType(result)
-    count = count + 1
-    -- Format the table for printing
-    printHand(result)
-end
--- print(string.format("Total combinations generated: %d (expected 21)", count))
-]]

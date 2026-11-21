@@ -44,8 +44,12 @@ end
 function Jinn:humanHandChanged()
     self.baize.humanHand:sort()
     self.baize.humanHand:fan()
-	local arr = self.baize.humanHand:createCopy('selected')
-    self.baize.humanHand.selectedPokerHandType = poker.handType(arr)
+    local arr = self.baize.humanHand:createCopy('selected')
+	if #arr > 0 then
+    	self.baize.humanHand.selectedPokerHandType = poker.handTypeEx(arr)
+    else
+   		self.baize.humanHand.selectedPokerHandType = nil
+	end
 end
 
 ---@param card Card
@@ -105,10 +109,18 @@ function Jinn:play()
     end
 
     local arr = self.baize.botHand:createCopy('all')
-    self.baize.botHand.selectedPokerHandType = poker.handType(arr)
+    if #arr > 0 then
+    	self.baize.botHand.selectedPokerHandType = poker.handTypeEx(arr)
+     else
+     	self.baize.botHand.selectedPokerHandType = nil
+     end
 
     arr = self.baize.humanHand:createCopy('selected')
-    self.baize.humanHand.selectedPokerHandType = poker.handType(arr)
+    if #arr > 0 then
+        self.baize.humanHand.selectedPokerHandType = poker.handTypeEx(arr)
+        else
+        	self.baize.humanHand.selectedPokerHandType = nil
+        end
 
     self.state = 'cashout'
 end
@@ -116,8 +128,13 @@ end
 function Jinn:cashout()
     -- player has pressed the cashout button
     -- update coins and return to setup state
-    local botScore = poker.handScore[self.baize.botHand.selectedPokerHandType].us
-    local humanScore = poker.handScore[self.baize.humanHand.selectedPokerHandType].us
+    local botScore, humanScore = 0, 0
+    if self.baize.botHand.selectedPokerHandType then
+        botScore = poker.handScore[self.baize.botHand.selectedPokerHandType].us
+    end
+    if self.baize.humanHand.selectedPokerHandType then
+        humanScore = poker.handScore[self.baize.humanHand.selectedPokerHandType].us
+    end
 
     if botScore > humanScore then
         log.info('bot wins', self.baize.botHand.selectedPokerHandType, 'better than',
@@ -164,9 +181,9 @@ function Jinn:action()
     elseif self.state == 'botDraw' then
         -- cheat: if bot hand > possible human hand, then play
         local arr = self.baize.humanHand:createCopy('all')
-        local humanScore = poker.handScore[poker.handType(arr)].us
+        local humanScore = poker.handScore[poker.handTypeEx(arr)].us
         arr = self.baize.botHand:createCopy('all')
-        local botScore = poker.handScore[poker.handType(arr)].us
+        local botScore = poker.handScore[poker.handTypeEx(arr)].us
         log.trace('scores: bot:', botScore, 'human:', humanScore)
         if botScore > humanScore then
             self:play()
@@ -179,14 +196,14 @@ function Jinn:action()
             local c = self.baize.stock:peek()
             assert(c)
             table.insert(arr, {ord=c.ord, suit=c.suit})
-            local stockScore = poker.handScore[poker.handType(arr)].us
+            local stockScore = poker.handScore[poker.handTypeEx(arr)].us
 
             arr = self.baize.botHand:createCopy('all')
             c = self.baize.discard:peek()
             assert(c)
             table.insert(arr, {ord=c.ord, suit=c.suit})
-            local discardScore = poker.handScore[poker.handType(arr)].us
-            
+            local discardScore = poker.handScore[poker.handTypeEx(arr)].us
+
             if stockScore > discardScore then
                 self.baize.botHand:push(self.baize.stock:pop())
             else
@@ -197,7 +214,7 @@ function Jinn:action()
         end
     elseif self.state == 'botDiscard' then
         local arr = self.baize.botHand:createCopy('all')
-        local bestScore = poker.handScore[poker.handType(arr)].us
+        local bestScore = poker.handScore[poker.handTypeEx(arr)].us
         local discardIndex = 1
         for i = 1, #arr do
             local arr2 = {}
@@ -206,7 +223,7 @@ function Jinn:action()
                     table.insert(arr2, arr[j])
                 end
             end
-            local score2 = poker.handScore[poker.handType(arr2)].us
+            local score2 = poker.handScore[poker.handTypeEx(arr2)].us
             -- discarding a card cannot make the hand score better
             -- so settle for not making it worse
             if score2 == bestScore then

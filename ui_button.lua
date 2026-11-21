@@ -56,7 +56,7 @@ function Button:draw()
     Util.setColor(backColor)
     love.graphics.circle('fill', x, y, self.radius)
     love.graphics.setLineWidth(1)
-    love.graphics.setColor(0, 0, 0, 0.5)	-- cartoon outlines are black, so why not
+    love.graphics.setColor(0, 0, 0, 0.05)	-- cartoon outlines are black, so why not
     love.graphics.circle('line', x, y, self.radius)
 
     if self.text then
