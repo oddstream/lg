@@ -149,6 +149,7 @@ function Util.inRect(x, y, rx, ry, rw, rh)
 end
 
 function Util.printCentered(text, x, y, w, h)
+	assert(type(text)=='string')
     local font = love.graphics.getFont()
 	if not font then return end
     local _, lines = font:getWrap(text, w)

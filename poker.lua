@@ -81,6 +81,10 @@ function poker.handType5(cards)
     return "High Card"
 end
 
+---@param hand Card[]
+---@return string
+---@return integer
+---@return Card[]
 function poker.handTypeEx(hand)
 
     local function get_combinations(cards, k)

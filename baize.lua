@@ -5,6 +5,7 @@ local log = require 'log'
 local Button = require 'ui_button'
 local Label = require 'ui_label'
 local Scene = require 'scene'
+local Pile = require 'pile'
 local Stock = require 'stock'
 local Discard = require 'discard'
 local Hand = require 'hand'
@@ -45,6 +46,7 @@ require 'colors'
 ---@field resize function
 ---@field update function
 ---@field draw function
+---@field stash Pile
 ---@field stock Stock
 ---@field discard Discard
 ---@field botHand Hand
@@ -58,6 +60,7 @@ function Baize.new()
 	local o = Scene.new('baize')
 
 	o.backgroundCanvas = nil
+	o.stash = Pile.new()
 	o.stock = Stock.new()
 	assert(type(o.stock.x)=='number')
 	assert(type(o.stock.y)=='number')
@@ -147,7 +150,7 @@ function Baize:deal()
 
 	-- recall all cards from piles
 	-- log.info(#self.stock.cards, 'cards in stock')
-	for _, p in ipairs({self.botHand, self.discard, self.humanHand}) do
+	for _, p in ipairs({self.stash, self.botHand, self.discard, self.humanHand}) do
 		-- log.info('recall', #p.cards, 'from', p)
 		while #p.cards > 0 do
 			self.stock:push(p:pop())
@@ -390,9 +393,9 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 	elseif self.stroke.objectType == 'widget' then
 		-- check mouse is still over button before triggering action
 		local widget = self.stroke.object
-		log.info('widget released', widget.jinCommand)
+		-- log.info('widget released', widget.jinCommand)
 		if widget:isPointOver(x, y) then
-			log.info('button pressed', widget.jinCommand)
+			-- log.info('button pressed', widget.jinCommand)
 			if type(widget.jinCommand) == 'string' and type(_G.Gin[widget.jinCommand]) == 'function' then
 				_G.Gin[widget.jinCommand](_G.Gin)
 			end
@@ -545,26 +548,22 @@ function Baize:draw()
 	end
 
 	if _G.SETTINGS.debug then
-		local ww, wh, _ = love.window.getMode()
-
 		love.graphics.setFont(_G.uiFont)
 		Util.setColor('Ivory')
 
-        if self.botHand.selectedPokerHandType then
+        if self.botHand.sel and self.botHand.sel.type then
       		local rx, ry, rw, rh = self.botHand:getRect()
 			local gap = _G.SETTINGS.cardHeight / 3
-			Util.printCentered(self.botHand.selectedPokerHandType,
+			Util.printCentered(self.botHand.sel.type,
 				rx, ry + rh + gap, rw, _G.uiFont:getLineHeight())
         end
-        if self.humanHand.selectedPokerHandType and self.humanHand:numberSelected() > 0 then
+        if self.humanHand.sel and self.humanHand.sel.cards and #self.humanHand.sel.cards > 0 then
        		local rx, ry, rw, rh = self.humanHand:getRect()
 			local gap = _G.SETTINGS.cardHeight / 3
-			Util.printCentered(self.humanHand.selectedPokerHandType,
+			Util.printCentered(self.humanHand.sel.type,
 				rx, ry - gap, rw, _G.uiFont:getLineHeight())
         end
-		-- love.graphics.print(_G.Gin.state,
-		-- 	(ww / 2) - _G.uiFont:getWidth(_G.Gin.state) / 2,
-		-- 	wh - _G.uiFont:getHeight())
+		love.graphics.print(_G.Gin.state, 0, 0)
 	end
 end
 

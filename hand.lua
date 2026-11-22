@@ -6,13 +6,18 @@ local Card = require 'card'
 local Pile = require 'pile'
 local Util = require 'util'
 
+---@class (exact) Selection
+---@field type string
+---@field score integer
+---@field cards Card[]
+
 ---@class (exact) Hand: Pile
 ---@field __index Hand
 ---@field __tostring function
 ---@field playerName string
 ---@field direction number
 ---@field size integer
----@field selectedPokerHandType string
+---@field sel Selection
 ---@field new function
 ---@field setPosition function
 ---@field cardDragged function(c:Card)
@@ -156,6 +161,7 @@ function Hand:fan()
         local y = self.y
         if c.selected then
             -- lift the human card by 15%
+            -- drop the bot card by 15%
             y = y + (_G.SETTINGS.cardHeight * 0.15) * self.direction
         end
         c:transitionTo(x, y)
@@ -179,11 +185,15 @@ end
 
 ---@return integer
 function Hand:numberSelected()
-    local n = 0
-    for _, c in ipairs(self.cards) do
-    	if c.selected then n = n + 1 end
+    -- local n = 0
+    -- for _, c in ipairs(self.cards) do
+    -- 	if c.selected then n = n + 1 end
+    -- end
+    -- return n
+    if self.sel then
+        return #self.sel.cards
     end
-    return n
+    return 0
 end
 
 --- create a copy of this hand's cards, for passing to poker type function
@@ -217,7 +227,7 @@ end
 function Hand:draw()
     Util.setColor('DarkGreen')
     local x, y, w, h = self:getRect()
-    love.graphics.rectangle('fill', x, y, w, h)
+    love.graphics.rectangle('fill', x, y, w, h, _G.SETTINGS.cardRadius, _G.SETTINGS.cardRadius)
 end
 
 return Hand
