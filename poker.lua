@@ -24,8 +24,8 @@ function poker.handType5(cards)
     assert(type(cards) == 'table')
     assert(#cards > 0)
     assert(#cards>=1)
-	assert(#cards<=5)
-	local n = #cards
+    assert(#cards<=5)
+    local n = #cards
     -- assert(n >= 1 and n <= 5, "expected 1 to 5 cards")
 
     local counts = {}

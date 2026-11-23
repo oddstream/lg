@@ -1,6 +1,6 @@
 -- pile
 
--- virtual base class for Stock, Discard, human hand, computer hand, and any other pile of cards
+-- virtual base class for Stock, Discard, ape hand, bot hand, and any other pile of cards
 -- by default, cards stack one on top of the other
 
 local log = require 'log'
@@ -99,14 +99,18 @@ function Pile:remove(i)
 	return card
 end
 
+---@return number
+---@return number
+---@return number
+---@return number
 function Pile:getRect()
-    return self.x, self.y, _G.SETTINGS.cardWidth, _G.SETTINGS.cardHeight
+	return self.x, self.y, _G.SETTINGS.cardWidth, _G.SETTINGS.cardHeight
 end
 
 ---@param x integer
 ---@param y integer
 function Pile:setPosition(x, y)
-    self.x = x
+	self.x = x
     self.y = y
     self:repositionCards()
 end

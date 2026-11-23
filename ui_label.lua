@@ -22,8 +22,8 @@ end
 ---@param w number
 ---@param h number
 function Label:resize(w, h)
-    self.width = _G.SETTINGS.cardHeight
-	self.height = _G.SETTINGS.cardWidth
+    self.width = w / 6  --_G.SETTINGS.cardHeight
+	self.height = _G.SETTINGS.cardWidth / 2
 end
 
 function Label:draw()

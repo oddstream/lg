@@ -50,7 +50,7 @@ require 'colors'
 ---@field stock Stock
 ---@field discard Discard
 ---@field botHand Hand
----@field humanHand Hand
+---@field apeHand Hand
 
 local Baize = {}
 Baize.__index = Baize
@@ -65,14 +65,13 @@ function Baize.new()
 	assert(type(o.stock.x)=='number')
 	assert(type(o.stock.y)=='number')
 	o.stock:fill()
-	o.stock:shuffle()
+	-- o.stock:shuffle()
 	-- o.stock:setPosition() -- otherwise it's at 0,0
 	log.info('created', #o.stock.cards, 'cards')
 	o.discard = Discard.new()
 
-	o.botHand = Hand.new(_G.SETTINGS.botName, 1, 8)
-
-	o.humanHand = Hand.new(_G.SETTINGS.humanName, -1, 7)
+	o.botHand = Hand.new(8, Card.flipDown)
+	o.apeHand = Hand.new(7, Card.flipUp)
 
 	o.playButton = Button.new({
 		x = 0,
@@ -96,12 +95,18 @@ function Baize.new()
 	})
 	o.buttons = {o.playButton,o.cashoutButton}
 
+	-- [ Round 7 ]
+    -- [ Bot Score / 12 x 10 ]
+    -- [ Bot Hand Type ]
+    -- [ Human Score / 7 x 2 ]
+    -- [ Human Hand Type ]
+
 	o.roundLabel = Label.new({
 		x = 0,
 		y = 0,
 		width = _G.SETTINGS.cardHeight,
-		height = _G.SETTINGS.cardWidth,
-		-- backColor = 'DarkGreen',
+		height = _G.SETTINGS.cardWidth / 2,
+		backColor = 'Black',
 		foreColor = 'Ivory',
 		state = 'active',
 	})
@@ -109,21 +114,48 @@ function Baize.new()
 		x = 0,
 		y = 0,
 		width = _G.SETTINGS.cardHeight,
-		height = _G.SETTINGS.cardWidth,
+		height = _G.SETTINGS.cardWidth / 2,
 		-- backColor = 'DarkGreen',
-		foreColor = 'Ivory',
+		foreColor = 'CornflowerBlue',
 		state = 'active',
 	})
-	o.humanScoreLabel = Label.new({
+	o.botTypeLabel = Label.new({
 		x = 0,
 		y = 0,
 		width = _G.SETTINGS.cardHeight,
-		height = _G.SETTINGS.cardWidth,
+		height = _G.SETTINGS.cardWidth / 2,
+		-- backColor = 'DarkGreen',
+		foreColor = 'CornflowerBlue',
+		state = 'active',
+	})
+	o.apeScoreLabel = Label.new({
+		x = 0,
+		y = 0,
+		width = _G.SETTINGS.cardHeight,
+		height = _G.SETTINGS.cardWidth / 2,
 		-- backColor = 'DarkGreen',
 		foreColor = 'Ivory',
 		state = 'active',
 	})
-	o.labels = {o.roundLabel,o.botScoreLabel,o.humanScoreLabel}
+	o.apeTypeLabel = Label.new({
+		x = 0,
+		y = 0,
+		width = _G.SETTINGS.cardHeight,
+		height = _G.SETTINGS.cardWidth / 2,
+		-- backColor = 'DarkGreen',
+		foreColor = 'Ivory',
+		state = 'active',
+	})
+	o.apeScoreLabel = Label.new({
+		x = 0,
+		y = 0,
+		width = _G.SETTINGS.cardHeight,
+		height = _G.SETTINGS.cardWidth / 2,
+		-- backColor = 'DarkGreen',
+		foreColor = 'Ivory',
+		state = 'active',
+	})
+	o.labels = {o.roundLabel,o.botScoreLabel,o.botTypeLabel,o.apeScoreLabel,o.apeTypeLabel}
 
 	o:resize(love.graphics.getWidth(), love.graphics.getHeight())
 
@@ -150,7 +182,7 @@ function Baize:deal()
 
 	-- recall all cards from piles
 	-- log.info(#self.stock.cards, 'cards in stock')
-	for _, p in ipairs({self.stash, self.botHand, self.discard, self.humanHand}) do
+	for _, p in ipairs({self.stash, self.botHand, self.discard, self.apeHand}) do
 		-- log.info('recall', #p.cards, 'from', p)
 		while #p.cards > 0 do
 			self.stock:push(p:pop())
@@ -164,8 +196,8 @@ function Baize:deal()
 	for _ = 1, self.botHand.size do
 		self.botHand:push(self.stock:pop())
 	end
-	for _ = 1, self.humanHand.size do
-		self.humanHand:push(self.stock:pop())
+	for _ = 1, self.apeHand.size do
+		self.apeHand:push(self.stock:pop())
 	end
 	self.discard:push(self.stock:pop())
 
@@ -197,11 +229,11 @@ function Baize:findCardAt(x, y)
 			return card
 		end
 	end
-	if #self.humanHand.cards > 0 then
-		for i = #self.humanHand.cards, 1, -1 do
-			local card = self.humanHand.cards[i]
+	if #self.apeHand.cards > 0 then
+		for i = #self.apeHand.cards, 1, -1 do
+			local card = self.apeHand.cards[i]
 			if not Card.isCard(card) then
-				log.error('Not a card at index', i, 'of', self.humanHand)
+				log.error('Not a card at index', i, 'of', self.apeHand)
 				return nil
 			end
 			if Util.inRect(x, y, card:getRect()) then
@@ -216,7 +248,7 @@ end
 ---@param y number
 ---@return Pile|nil
 function Baize:findPileAt(x, y)
-	for _, pile in ipairs({self.humanHand, self.discard}) do
+	for _, pile in ipairs({self.apeHand, self.discard}) do
 		if Util.inRect(x, y, pile:getRect()) then
 			return pile
 		end
@@ -237,13 +269,13 @@ function Baize:findWidgetAt(x, y)
 	return nil
 end
 
----@param c Card
+---@param c Card|Widget|Label|Button
 ---@return Pile|nil
 function Baize:largestIntersection(c)
 	local largestArea = 0
 	local pile
 	local cx, cy, cw, ch = c:getRect()
-	for _, p in ipairs({self.discard, self.humanHand}) do
+	for _, p in ipairs({self.discard, self.apeHand}) do
 		local px, py, pw, ph = p:getRect()
 		local area = Util.overlapArea(cx, cy, cw, ch, px, py, pw, ph)
 		if area > largestArea then
@@ -264,12 +296,16 @@ function Baize:mousePressed(x, y, button, istouch, presses)
 		log.warn('mousePressed', button, 'already a stroke')
 		return
 	end
+	if button == 2 then
+		self.stroke = {init = {x = x, y = y}}
+		love.mouse.setVisible(false)
+		return
+	end
 	local card = self:findCardAt(x, y)
 	if card then
 		if not card:static() then
 			log.warn('mousePressed', card, 'is not static')
 		end
-		-- when we start dragging, we leave the card in it's owning pile
 		self.stroke = {
 			init = {x = x, y = y},
 			object = card,
@@ -326,6 +362,14 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 		return
 	end
 	love.mouse.setVisible(true)
+	if button == 2 then
+		for _, c in ipairs(self.apeHand.cards) do
+			c:unselect()
+		end
+		self.apeHand:fan()
+		self.stroke = nil
+		return
+	end
 	if self.stroke.objectType == 'card' then
         local card = self.stroke.object
 		-- TODO allow the card to move a little when tapped, transition it back
@@ -333,8 +377,17 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
             -- log.info('mouseReleased', card, 'dragged to', card.x, card.y)
             local dst = self:largestIntersection(card)
             if not dst then
-                card:cancelDrag() -- transition card back to it's original position
-                card.owner:fan()
+            	-- dragging a hand card into nowhere - short cut for dragging to discard pile
+                if _G.Gin:isAllowed(card, card.owner, self.discard) then
+                	local from, to = card.owner, self.discard
+                    from:removeCard(card)
+                    to:push(card)
+                    card:stopDrag()
+                    _G.Gin:notifyCardMove(card, from, to)
+                else
+                    card:cancelDrag()
+                    card.owner:fan() -- animate dragged card back to owner
+                end
             else
                 -- log.info('drag', card, 'from', card.owner, 'to', dst)
                 if card.owner == dst then
@@ -343,9 +396,7 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
                 else -- dragging card to a different pile
                     if _G.Gin:isAllowed(card, card.owner, dst) then
                         local from, to = card.owner, dst
-                        -- remove card from src pile (pile:pop() | table.remove() + fan())
                         from:removeCard(card)
-                        -- insert card into dst pile (push() | table.insert())
                         dst:insertCard(card)
                         card:stopDrag()
                         _G.Gin:notifyCardMove(card, from, to)
@@ -356,30 +407,30 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
                 end
             end
         else -- card was not dragged, so we'll call that a tap
-            -- log.info('mouseReleased', card, 'tapped (not dragged)')
+			-- log.info('mouseReleased', card, 'tapped (not dragged)')
             if card.owner == self.stock then
-                if _G.Gin:isAllowed(card, self.stock, self.humanHand) then
+                if _G.Gin:isAllowed(card, self.stock, self.apeHand) then
                     card:stopDrag()
                     self.stock:pop() -- .owner is now nil
-                    self.humanHand:push(card)
-                    _G.Gin:notifyCardMove(card, self.stock, self.humanHand)
+                    self.apeHand:push(card)
+                    _G.Gin:notifyCardMove(card, self.stock, self.apeHand)
                 else
                     card:cancelDrag()
                 end
             elseif card.owner == self.discard then
-                if _G.Gin:isAllowed(card, self.discard, self.humanHand) then
+                if _G.Gin:isAllowed(card, self.discard, self.apeHand) then
                     card:stopDrag()
                     self.discard:pop()
-                    self.humanHand:push(card)
-                    _G.Gin:notifyCardMove(card, self.discard, self.humanHand)
+                    self.apeHand:push(card)
+                    _G.Gin:notifyCardMove(card, self.discard, self.apeHand)
                 else
                     card:cancelDrag()
                 end
-            elseif card.owner == self.humanHand then
-                -- no longer tap to move card to discard; human has to drag it (sorry)
+            elseif card.owner == self.apeHand then
+                -- no longer tap to move card to discard; ape has to drag it (sorry)
                 card:stopDrag()
                 -- TODO this test belongs in Jinn, where the rules are
-                if self.humanHand:numberSelected() == 5 and not card.selected then
+                if self.apeHand:numberSelected() == 5 and not card.selected then
                 	log.warn('cannot select more than 5 cards')
                 else
                     card:toggleSelect()
@@ -413,9 +464,9 @@ function Baize:mouseTapped(x, y, button)
 	if self.stroke.objectType == 'card' then
 		local c = self.stroke.object
 		-- log.info('mouseTapped on', c, 'at', c.x, c.y)
-		-- tapping on stock, move top card to human hand
-		-- tapping on discard, move top card to human hand
-		-- tapping on human hand, move card to discard pile
+		-- tapping on stock, move top card to ape hand
+		-- tapping on discard, move top card to ape hand
+		-- tapping on ape hand, move card to discard pile
 		c.owner:tapped(c)
 	end
 end
@@ -430,10 +481,10 @@ function Baize:keyPressed(key)
 		for _, c in ipairs(self.botHand.cards) do
 			c:flip()
 		end
-	elseif key == 'p' and _G.Gin.state == 'humanDraw' then
+	elseif key == 'p' and _G.Gin.state == 'apeDraw' then
 		_G.Gin:play()
 	elseif key == 'r' then
-		log.info(self.botHand, self.stock, self.discard, self.humanHand)
+		log.info(self.botHand, self.stock, self.discard, self.apeHand)
 	end
 end
 
@@ -442,22 +493,22 @@ end
 function Baize:resize(w, h)
 	-- log.info("Baize resized to: " .. w .. "x" .. h)
 	self.backgroundCanvas = nil	-- regenerate this at next draw()
-	self.cardRect = {x=0, y=0, width=w-_G.SETTINGS.cardHeight, height=h}
-	self.uiRect = {x=self.cardRect.width, y=0, width=_G.SETTINGS.cardHeight, height=h}
+	self.uiRect = {x=0, y=0, width=w/6, height=h}
+	self.cardRect = {x=self.uiRect.width, y=0, width=w-self.uiRect.width, height=h}
 	_G.uiFont = love.graphics.newFont(_G.ORD_FONT, _G.SETTINGS.cardWidth / 4)
 
-	for _, p in ipairs({self.stock, self.discard, self.botHand, self.humanHand}) do
+	for _, p in ipairs({self.stock, self.discard, self.botHand, self.apeHand}) do
 		p:resize(w, h)
 		p:layout(self.cardRect)
 		p:fan()
 	end
-	-- all buttons sit at the center bottom of the uiRect
+	-- all buttons sit at bottom of the screen/cardRect
 	for _, b in ipairs(self.buttons) do
 		b:resize(w, h)
 		local gap = b.radius / 2
 		b:setPosition(
-			self.uiRect.x + (self.uiRect.width / 2) - (b.radius / 2) + gap,
-			self.uiRect.height - b.radius - gap
+			self.cardRect.x + self.cardRect.width - b.radius - gap,
+			self.cardRect.y + self.cardRect.height - b.radius - gap
 		)
 	end
 	-- labels stack vertically from the top of the uiRect
@@ -471,7 +522,7 @@ end
 
 ---@param dt_seconds number
 function Baize:update(dt_seconds)
-	local sources = {self.stock, self.discard, self.botHand, self.humanHand}
+	local sources = {self.stock, self.discard, self.botHand, self.apeHand}
 	for _, src in ipairs(sources) do
 		src:update(dt_seconds)
 	end
@@ -494,14 +545,14 @@ function Baize:draw()
 	love.graphics.setColor(1,1,1,1)
 	love.graphics.draw(self.backgroundCanvas, 0, 0)
 
-	if self.uiRect then	-- may not have had a resize() yet
+	if self.cardRect then	-- may not have had a resize() yet
 		Util.setColor('DarkGreen')
 		love.graphics.setLineWidth(1)
 		love.graphics.line(
-			self.uiRect.x,
-			self.uiRect.y,
-			self.uiRect.x,
-			self.uiRect.y + self.uiRect.height)
+			self.cardRect.x,
+			self.cardRect.y,
+			self.cardRect.x,
+			self.cardRect.y + self.cardRect.height)
 	end
 
 	-- draw the UI first, so cards can spill over it, rather than vice-a-versa
@@ -512,7 +563,7 @@ function Baize:draw()
 		l:draw()
 	end
 
-	local sources = {self.stock, self.discard, self.botHand, self.humanHand}
+	local sources = {self.stock, self.discard, self.botHand, self.apeHand}
 
 	for _, p in ipairs(sources) do
 		p:draw()
@@ -546,7 +597,7 @@ function Baize:draw()
 			end
 		end
 	end
-
+--[[
 	if _G.SETTINGS.debug then
 		love.graphics.setFont(_G.uiFont)
 		Util.setColor('Ivory')
@@ -557,14 +608,15 @@ function Baize:draw()
 			Util.printCentered(self.botHand.sel.type,
 				rx, ry + rh + gap, rw, _G.uiFont:getLineHeight())
         end
-        if self.humanHand.sel and self.humanHand.sel.cards and #self.humanHand.sel.cards > 0 then
-       		local rx, ry, rw, rh = self.humanHand:getRect()
+        if self.apeHand.sel and self.apeHand.sel.cards and #self.apeHand.sel.cards > 0 then
+       		local rx, ry, rw, rh = self.apeHand:getRect()
 			local gap = _G.SETTINGS.cardHeight / 3
-			Util.printCentered(self.humanHand.sel.type,
+			Util.printCentered(self.apeHand.sel.type,
 				rx, ry - gap, rw, _G.uiFont:getLineHeight())
         end
 		love.graphics.print(_G.Gin.state, 0, 0)
 	end
+]]
 end
 
 return Baize

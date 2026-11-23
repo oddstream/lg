@@ -13,10 +13,10 @@ _G.SETTINGS = {
     cardRoundness = 200 / 10,
     cardRadius = 200 / 1.444 / 10,    -- cardWidth / 10
 
-    aniSpeed = 0.5,
+    aniSpeed = 0.75,
 
     botName = 'GinBot',
-    humanName = 'Gilbert',
+    apeName = 'Gilbert',
 
     cardColors = {
         ['♦'] = 'Crimson',
