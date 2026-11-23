@@ -47,7 +47,7 @@ function Jinn:botHandChanged()
 	if #arr > 0 then
 		local t, s, c = poker.handTypeEx(arr)
 		self.baize.botHand.sel = {type=t, score=s, cards=c}
-		self.baize.botTypeLabel.text = t
+		-- self.baize.botTypeLabel.text = t
 		log.trace('botHandChanged', t)
 	else
 		self.baize.botHand.sel = nil
@@ -149,6 +149,10 @@ function Jinn:play()
 	-- refan to show selected bot cards
 	self.baize.botHand:fan()
 
+	-- show what type of hand the bot has
+	self.baize.botTypeLabel.text = self.baize.botHand.sel.type
+
+	-- TODO should need to do this, ape hand is tracked as it changes?
 	local arr = self.baize.apeHand:createCopy('selected')
 	if #arr > 0 then
    		local t,s,c = poker.handTypeEx(arr)
