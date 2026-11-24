@@ -8,21 +8,31 @@ local log = require 'log'
 local poker = require 'poker'
 local Card  = require 'card'
 
+local roundHandSizes = {
+	{bot=6, ape=8},
+	{bot=7, ape=8},
+	{bot=7, ape=7},
+	{bot=8, ape=7},
+	{bot=8, ape=6},
+	{bot=9, ape=6},
+}
+
 ---@class (exact) Jinn
 ---@field __index Jinn
 ---@field __tostring function
 ---@field baize table
 ---@field state string 'setup'|'apeDraw'|'apeDiscard'|'botDraw'|'botDiscard'|'cashout'
 ---@field round integer
----@field botCoin integer
----@field apeCoin integer
+---@field botRoundsWon integer
+---@field apeRoundsWon integer
+---@field botScoreThisRound integer
+---@field apeScoreThisRound integer
 ---@field new function
 ---@field isAllowed function
 ---@field notifyCardMove function
 ---@field notifyCardTapped function
 ---@field action function
 ---@field play function
-
 local Jinn = {}
 Jinn.__index = Jinn
 
@@ -34,7 +44,13 @@ end
 ---@param baize Baize
 ---@return Jinn
 function Jinn.new(baize)
-	local o = {baize = baize, state = 'setup', round = 0, botCoin = 0, apeCoin = 0}
+	local o = {baize = baize, state = 'setup',
+		round = 0,	-- first setup bumps this to 1
+		botScoreThisRound = 0,
+		apeScoreThisRound = 0,
+		botRoundsWon = 0,
+		apeRoundsWon = 0,
+	}
 	-- for the moment, the bot is always the dealer
 	return setmetatable(o, Jinn)
 end
@@ -192,10 +208,10 @@ function Jinn:cashout()
 		log.trace('bot score', botValue * botScore, 'ape score', apeValue * apeScore)
 	end
 
-	self.botCoin = self.botCoin + botValue * botScore
-	self.apeCoin = self.apeCoin + apeValue * apeScore
-	self.baize.botScoreLabel.text = string.format('Bot $%d', self.botCoin)
-	self.baize.apeScoreLabel.text = string.format('Ape $%d', self.apeCoin)
+	self.botScoreThisRound = self.botScoreThisRound + botValue * botScore
+	self.apeScoreThisRound = self.apeScoreThisRound + apeValue * apeScore
+	self.baize.botScoreLabel.text = string.format('Bot %d', self.botScoreThisRound)
+	self.baize.apeScoreLabel.text = string.format('Ape %d', self.apeScoreThisRound)
 
 	-- move selected bot cards to stash
 	local src = self.baize.botHand.cards
@@ -238,7 +254,16 @@ function Jinn:cashout()
 	if #self.baize.stock.cards > 0 then
 		self.state = 'apeDraw'
 	else
-		self.state = 'setup'
+		if self.apeScoreThisRound > self.botScoreThisRound then
+			self.apeRoundsWon = self.apeRoundsWon + 1
+		elseif self.botScoreThisRound > self.apeScoreThisRound then
+			self.botRoundsWon = self.botRoundsWon + 1
+		end
+		if #roundHandSizes == self.round then
+			self.state = 'gameover'
+		else
+			self.state = 'setup'
+		end
 	end
 end
 
@@ -247,14 +272,21 @@ function Jinn:action()
 	-- log.info('Jinn action', self.state)
 	if self.state == 'setup' then
 		self.round = self.round + 1
+		self.botScoreThisRound = 0
+		self.apeScoreThisRound = 0
+		self.baize.botHand.size = roundHandSizes[self.round].bot
+		self.baize.apeHand.size = roundHandSizes[self.round].ape
 		self.baize:deal()
 		self:botHandChanged()
 		self:apeHandChanged()
 		
 		self.baize.roundLabel.text = string.format('Round %d', self.round)
-		
-		self.baize.botScoreLabel.text = string.format('Bot $%d', self.botCoin)
-		self.baize.apeScoreLabel.text = string.format('Ape $%d', self.apeCoin)
+		self.baize.roundProgressLabel.text = string.format('Bot %d, Ape %d',
+			self.botRoundsWon,
+			self.apeRoundsWon
+		)
+		self.baize.botScoreLabel.text = string.format('Bot %d', self.botScoreThisRound)
+		self.baize.apeScoreLabel.text = string.format('Ape %d', self.apeScoreThisRound)
 		
 		self.baize.botTypeLabel.state = 'hidden'
 		self.baize.botMultLabel.state = 'hidden'
@@ -263,6 +295,16 @@ function Jinn:action()
 		self.baize.playButton.state = 'disabled'
 		self.baize.cashoutButton.state = 'hidden'
 		self.state = 'apeDraw'
+	elseif self.state == 'gameover' then
+		log.info('game over')
+		if self.botRoundsWon > self.apeRoundsWon then
+			log.info('bot wins', self.botRoundsWon, ':', self.apeRoundsWon)
+		elseif self.apeRoundsWon > self.botRoundsWon then
+			log.info('ape wins', self.apeRoundsWon, ':', self.botRoundsWon)
+		else
+			log.info('game tied', self.apeRoundsWon, ':', self.botRoundsWon)
+		end
+		love.event.quit(0)
 	elseif self.state == 'apeDraw' then
 		if self.baize.apeHand:numberSelected() > 0 then
 			self.baize.playButton.state = 'active'

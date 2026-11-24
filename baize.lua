@@ -66,8 +66,8 @@ function Baize.new()
 	log.info('Baize.new() created', #o.stock.cards, 'cards')
 	o.discard = Discard.new()
 
-	o.botHand = Hand.new(8, Card.flipDown)
-	o.apeHand = Hand.new(7, Card.flipUp)
+	o.botHand = Hand.new(Card.flipDown)
+	o.apeHand = Hand.new(Card.flipUp)
 
 	o.allPiles = { o.stash, o.stock, o.discard, o.botHand, o.apeHand }
 
@@ -98,6 +98,13 @@ function Baize.new()
  	-- [ Ape 7 x 2 ]
 
 	o.roundLabel = Label.new({
+		width = _G.SETTINGS.cardHeight,
+		height = _G.SETTINGS.cardWidth / 2,
+		backColor = 'Black',
+		foreColor = 'Ivory',
+		state = 'active',
+	})
+	o.roundProgressLabel = Label.new({
 		width = _G.SETTINGS.cardHeight,
 		height = _G.SETTINGS.cardWidth / 2,
 		backColor = 'Black',
@@ -149,7 +156,7 @@ function Baize.new()
 		state = 'active',
 	})
 	o.labels = {
-		o.roundLabel,
+		o.roundLabel, o.roundProgressLabel,
 		o.botScoreLabel,o.botTypeLabel,o.botMultLabel,
 		o.apeScoreLabel,o.apeTypeLabel,o.apeMultLabel
 	}
@@ -369,7 +376,7 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 	end
 	if self.stroke.objectType == 'card' then
 		local card = self.stroke.object
-		-- TODO allow the card to move a little when tapped, transition it back
+		-- card:wasDragged allows the card to move a little when tapped
 		if card:wasDragged() then
 			-- log.info('mouseReleased', card, 'dragged to', card.x, card.y)
 			local dst = self:largestIntersection(card)

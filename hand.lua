@@ -34,14 +34,13 @@ function Hand:__tostring()
 	return string.format('hand(%d)', #self.cards)
 end
 
----@param size integer
----@param flipFunc
+---@param flipFunc function
 ---@return Hand
-function Hand.new(size, flipFunc)
+function Hand.new(flipFunc)
 	---@class (exact) Hand: Pile
 	local o = Pile.new()
-	o.size = size
 	o.flipFunc = flipFunc
+	o.size = 5
 	return setmetatable(o, Hand)
 end
 

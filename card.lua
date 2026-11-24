@@ -48,6 +48,7 @@ local Util = require 'util'
 ---@field cancelDrag function
 ---@field stopDrag function
 ---@field wasDragged function
+---@field wasNudged function
 ---@field update function(dt_seconds:number)
 ---@field draw function()
 
@@ -266,9 +267,10 @@ end
 ---@return boolean
 function Card:wasDragged()
 	if self.dragStart then
-		if self.dragStart.x ~= self.x or self.dragStart.y ~= self.y then
-			return true
-		end
+		return math.abs(self.x - self.dragStart.x) > 3.0 or math.abs(self.y - self.dragStart.y) > 3.0
+		-- if self.dragStart.x ~= self.x or self.dragStart.y ~= self.y then
+		-- 	return true
+		-- end
 	end
 	return false
 end
