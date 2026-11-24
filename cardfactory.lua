@@ -91,11 +91,11 @@ local pipInfo = {
 local function getSuitColor(suit)
 	-- returns {r, g, b} table that can be passed to love.graphics.setColor
 	-- after unpacking and passing through getColorFromBytes
-    -- if suit == '♦' or suit == '♥' then
-    --     return _G.COLORS['Crimson']
-    -- else
-    --     return _G.COLORS['Black']
-    -- end
+	-- if suit == '♦' or suit == '♥' then
+	--     return _G.COLORS['Crimson']
+	-- else
+	--     return _G.COLORS['Black']
+	-- end
 	return _G.COLORS[_G.SETTINGS.cardColors[suit]]
 end
 
@@ -205,9 +205,9 @@ function _G.cardTextureFactory()
 
 	local function drawCardRect()
 		love.graphics.rectangle('fill', 0, 0, width, height, radius, radius)
-        love.graphics.setLineWidth(1)
-        love.graphics.setColor(0, 0, 0, 0.05)	-- cartoon outlines are black, so why not
-        love.graphics.rectangle('line', 1, 1, width - 2, height - 2, radius, radius)
+		love.graphics.setLineWidth(1)
+		love.graphics.setColor(0, 0, 0, 0.05)	-- cartoon outlines are black, so why not
+		love.graphics.rectangle('line', 1, 1, width - 2, height - 2, radius, radius)
 	end
 
 	-- create fonts
@@ -230,17 +230,17 @@ function _G.cardTextureFactory()
 	canvas = love.graphics.newCanvas(width, height)
 	love.graphics.setCanvas({canvas, stencil=true})	-- direct drawing operations to the canvas
 
-    local frontColor, backColor = getGradientColors('Ivory', 0.06)
-    love.gradient.draw(
-        function()
-            drawCardRect()
-        end,
-        'radial',
-        halfWidth, halfHeight,
-        halfWidth, halfHeight,
-        backColor,
-        frontColor
-    )
+	local frontColor, backColor = getGradientColors('Ivory', 0.06)
+	love.gradient.draw(
+		function()
+			drawCardRect()
+		end,
+		'radial',
+		halfWidth, halfHeight,
+		halfWidth, halfHeight,
+		backColor,
+		frontColor
+	)
 
 	love.graphics.setCanvas()	-- reset render target to the screen
 	local cardFaceTexture = canvas
@@ -250,19 +250,19 @@ function _G.cardTextureFactory()
 	canvas = love.graphics.newCanvas(width, height)
 	love.graphics.setCanvas({canvas, stencil=true})	-- direct drawing operations to the canvas
 
-    frontColor, backColor = getGradientColors('CornflowerBlue', 0.09)
-    love.gradient.draw(
-        function()
-            drawCardRect()
-        end,
-        'radial',
-        halfWidth, halfHeight,
-        halfWidth, halfHeight,
-        backColor,
-        frontColor
-    )
+	frontColor, backColor = getGradientColors('CornflowerBlue', 0.09)
+	love.gradient.draw(
+		function()
+			drawCardRect()
+		end,
+		'radial',
+		halfWidth, halfHeight,
+		halfWidth, halfHeight,
+		backColor,
+		frontColor
+	)
 
-    do  -- draw some fancy little pips in the middle of the card back
+	do  -- draw some fancy little pips in the middle of the card back
 		local pipWidth = suitFont:getWidth('♠') * 0.8
 		local pipHeight = suitFont:getHeight() * 0.8
 		love.graphics.setFont(suitFont)
@@ -272,7 +272,7 @@ function _G.cardTextureFactory()
 		love.graphics.setColor(0,0,0, 0.2)
 		love.graphics.print('♣', width / 2 - pipWidth, height / 2 - pipHeight)	-- top left
 		love.graphics.print('♠', width / 2, height / 2)	-- bottom right
-    end
+	end
 
 	love.graphics.setCanvas()	-- reset render target to the screen
 	local cardBackTexture = canvas
@@ -289,16 +289,16 @@ function _G.cardTextureFactory()
 
 	--
 
-    local cardFaceTextures = {}
+	local cardFaceTextures = {}
 	-- TODO add texture for card ord=1, for special cards
 	for _, ord in ipairs(_G.ALLORDS) do			-- 2 .. 10 and Jack=11, Queen=12, King=13, Ace=14
 		for _, suit in ipairs(_G.ALLSUITS) do	-- Club Diamond Heart Spade; alpha order
 			local key = Util.cardTextureId(ord, suit)
-            if ord == 10 then
-                cardFaceTextures[key] = createRegularFace(cardFaceTexture, ordFont10, suitFont, suitFontSmall, suitFontLarge, width, height, ord, suit)
-            else
-                cardFaceTextures[key] = createRegularFace(cardFaceTexture, ordFont, suitFont, suitFontSmall, suitFontLarge, width, height, ord, suit)
-            end
+			if ord == 10 then
+				cardFaceTextures[key] = createRegularFace(cardFaceTexture, ordFont10, suitFont, suitFontSmall, suitFontLarge, width, height, ord, suit)
+			else
+				cardFaceTextures[key] = createRegularFace(cardFaceTexture, ordFont, suitFont, suitFontSmall, suitFontLarge, width, height, ord, suit)
+			end
 		end
 	end
 

@@ -26,20 +26,22 @@ Widget.__index = Widget
 ---@param o table
 ---@return Widget
 function Widget.new(o)
-    return setmetatable(o, Widget)
+	o.x = o.x or 0
+	o.y = o.y or 0
+	return setmetatable(o, Widget)
 end
 
 ---@param x number
 ---@param y number
 function Widget:setPosition(x,y)
-    self.x = x
-    self.y = y
+	self.x = x
+	self.y = y
 end
 
 ---@return number
 ---@return number
 function Widget:getPosition()
-    return self.x, self.y
+	return self.x, self.y
 end
 
 ---@return number
@@ -55,32 +57,32 @@ end
 ---@param w number
 ---@param h number
 function Widget:setRect(x, y, w, h)
-    self.x = x
-    self.y = y
-    self.width = w
-    self.height = h
+	self.x = x
+	self.y = y
+	self.width = w
+	self.height = h
 end
 
 ---@param x number
 ---@param y number
 ---@return boolean
 function Widget:isPointOver(x, y)
-    return Util.inRect(x, y, self:getRect())
+	return Util.inRect(x, y, self:getRect())
 end
 
 ---@param w number
 ---@param h number
 function Widget:resize(w, h)
-    -- handled by subclass
+	-- handled by subclass
 end
 
 ---@param dt_seconds number
 function Widget:update(dt_seconds)
-    -- handled by subclass
+	-- handled by subclass
 end
 
 function Widget:draw()
-    -- handled by subclass
+	-- handled by subclass
 end
 
 return Widget

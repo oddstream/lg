@@ -72,7 +72,8 @@ function Card.isCard(c)
 end
 
 function Card:value()
-	return math.min(self.ord, 10)
+	-- return math.min(self.ord, 10)
+	return _G.CARDVALUES[self.ord]
 end
 
 ---@param o table
@@ -95,7 +96,7 @@ function Card.new(o)
 	o.flipWidth = 1.0	-- lerps from 1.0 to 0.0 (then from 0.0 to 1.0)
 	o.flipDirection = 0	-- -1 narrower, 0 static, +1 wider
 
-    return setmetatable(o, Card)
+	return setmetatable(o, Card)
 end
 
 ---@param x number
@@ -125,11 +126,11 @@ end
 ---@return number
 ---@return number
 function Card:getStaticRect()
-    if self:dragging() then
-        return self.dragStart.x, self.dragStart.y, _G.SETTINGS.cardWidth, _G.SETTINGS.cardHeight
-    else
-        return self.x, self.y, _G.SETTINGS.cardWidth, _G.SETTINGS.cardHeight
-    end
+	if self:dragging() then
+		return self.dragStart.x, self.dragStart.y, _G.SETTINGS.cardWidth, _G.SETTINGS.cardHeight
+	else
+		return self.x, self.y, _G.SETTINGS.cardWidth, _G.SETTINGS.cardHeight
+	end
 end
 
 function Card:select()
@@ -205,7 +206,7 @@ function Card:transitionTo(x, y)
 	assert(self.y)
 	assert(x)
 	assert(y)
-    -- log.trace(self, self.x, self.y, 'to', x, y)
+	-- log.trace(self, self.x, self.y, 'to', x, y)
 	if self.x == x and self.y == y then
 		self:setPosition(x, y)
 		return
@@ -349,7 +350,7 @@ function Card:draw()
 			img = _G.cardFaceTextures[self.textureId]
 		end
 	end
-    assert(img, 'no img for', self.textureId)
+	assert(img, 'no img for', self.textureId)
 
 	if self:flipping() then
 		local cw = _G.SETTINGS.cardWidth

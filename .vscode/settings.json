@@ -1,7 +1,8 @@
 {
-	"editor.fontFamily": "DejaVu Sans Mono",
+	// "editor.fontFamily": "'0xProto'",
+	// "editor.fontFamily": "DejaVu Sans Mono",
 	// "editor.fontFamily": "Hack",
-	// "editor.fontFamily": "Liberation Mono",
+	"editor.fontFamily": "Liberation Mono",
 	// "editor.fontFamily": "Roboto Mono",
 	// "editor.fontFamily": "JetBrains Mono",
 	// "editor.fontFamily": "CommitMono",
@@ -13,6 +14,12 @@
 	// "editor.fontFamily": "Droid Sans Mono",
 	// "editor.fontFamily": "Inconsolata",
 	// "editor.fontFamily": "Go Mono",
+    "workbench.colorTheme": "Visual Studio Dark",
+    "editor.minimap.enabled": false,
+    "editor.fontSize": 16,
+    "git.confirmSync": false,
+    "editor.fontLigatures": true,
+	"chat.disableAIFeatures": true,
 	"Lua.runtime.version": "LuaJIT",
 	"Lua.workspace.library": [
 		"${3rd}/love2d/library"

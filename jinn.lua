@@ -40,33 +40,34 @@ function Jinn.new(baize)
 end
 
 function Jinn:botHandChanged()
-	self.baize.botHand:sort()
-	self.baize.botHand:fan()
-	-- un/comment this to always display bot hand type
-	local arr = self.baize.botHand:createCopy('all')
+	local hand, typeLabel, multLabel = self.baize.botHand, self.baize.botTypeLabel, self.baize.botMultLabel
+	hand:sort()
+	hand:fan()
+	local arr = hand:createCopy('all')
 	if #arr > 0 then
-		local t, s, c = poker.handTypeEx(arr)
-		self.baize.botHand.sel = {type=t, score=s, cards=c}
-		-- self.baize.botTypeLabel.text = t
-		log.trace('botHandChanged', t)
+		hand.sel = poker.handTypeEx(arr)
+		typeLabel.text = hand.sel.type
+		multLabel.text = string.format('%d x %d', hand.sel.value, hand.sel.score)
 	else
-		self.baize.botHand.sel = nil
-		self.baize.botTypeLabel.text = '(no selection)'
-		log.trace('botHandChanged - nil')
+		hand.sel = nil
+		typeLabel.text = '(no selection)'
+		multLabel.text = '0 x 0'
 	end
 end
 
 function Jinn:apeHandChanged()
-	self.baize.apeHand:sort()
-	self.baize.apeHand:fan()
-	local arr = self.baize.apeHand:createCopy('selected')
+	local hand, typeLabel, multLabel = self.baize.apeHand, self.baize.apeTypeLabel, self.baize.apeMultLabel
+	hand:sort()
+	hand:fan()
+	local arr = hand:createCopy('selected')
 	if #arr > 0 then
-		local t, s, c = poker.handTypeEx(arr)
-		self.baize.apeHand.sel = {type=t, score=s, cards=c}
-		self.baize.apeTypeLabel.text = t
+		hand.sel = poker.handTypeEx(arr)
+		typeLabel.text = hand.sel.type
+		multLabel.text = string.format('%d x %d', hand.sel.value, hand.sel.score)
 	else
-		self.baize.apeHand.sel = nil
-		self.baize.apeTypeLabel.text = '(no selection)'
+		hand.sel = nil
+		typeLabel.text = '(no selection)'
+		multLabel.text = '0 x 0'
 	end
 end
 
@@ -122,17 +123,11 @@ function Jinn:play()
 	-- ape or bot has pressed the play button
 	-- show bot cards and hand type
 	-- goto cashout state
+	assert(self.baize.botHand.sel)
+
 	for _, c in ipairs(self.baize.botHand.cards) do
 		c:flipUp()
 	end
-	assert(self.baize.botHand.sel)
-	-- local arr = self.baize.botHand:createCopy('all')
-	-- if #arr > 0 then
-	-- 	local t,s,c = poker.handTypeEx(arr)
-	-- 	self.baize.botHand.sel = { type=t, score=s, cards=c }
-	-- else
-	-- 	self.baize.botHand.sel = nil
-	-- end
 
 	-- select bot cards
 	for _, c in ipairs(self.baize.botHand.cards) do
@@ -150,16 +145,8 @@ function Jinn:play()
 	self.baize.botHand:fan()
 
 	-- show what type of hand the bot has
-	self.baize.botTypeLabel.text = self.baize.botHand.sel.type
-
-	-- TODO should need to do this, ape hand is tracked as it changes?
-	local arr = self.baize.apeHand:createCopy('selected')
-	if #arr > 0 then
-   		local t,s,c = poker.handTypeEx(arr)
-		self.baize.apeHand.sel = {type=t, score=s, cards=c}
-	else
-	   	self.baize.apeHand.sel = nil
-	end
+	self.baize.botTypeLabel.state = 'active'
+	self.baize.botMultLabel.state = 'active'
 
 	self.state = 'cashout'
 end
@@ -169,13 +156,18 @@ end
 local function valueTotal(cards)
 	local n = 0
 	for _, c in ipairs(cards) do
-		n = n + math.min(c.ord, 10)
+		-- these aren't real cards, so we can't use Card:value()
+		-- n = n + math.min(c.ord, 10)
+		n = n + _G.CARDVALUES[c.ord]
 	end
 	return n
 end
 
 function Jinn:cashout()
+
 	-- player has pressed the cashout button
+	self.baize.botTypeLabel.state = 'hidden'
+	self.baize.botMultLabel.state = 'hidden'
 
 	-- update score/coins
 	assert(self.baize.botHand.sel)
@@ -189,30 +181,34 @@ function Jinn:cashout()
 	end
 
 	-- TODO UI bling here
-	if (botScore * botValue) > (apeScore * apeValue) then
-		log.info('bot wins', self.baize.botHand.sel.type, 'better than', self.baize.apeHand.sel.type)
-	elseif apeScore > botScore then
-		log.info('ape wins', self.baize.apeHand.sel.type, 'better than', self.baize.botHand.sel.type)
-	else
-		log.info('draw')
+	if self.baize.apeHand.sel then
+		if (botScore * botValue) > (apeScore * apeValue) then
+			log.info('bot wins', self.baize.botHand.sel.type, 'better than', self.baize.apeHand.sel.type)
+		elseif apeScore > botScore then
+			log.info('ape wins', self.baize.apeHand.sel.type, 'better than', self.baize.botHand.sel.type)
+		else
+			log.info('draw')
+		end
+		log.trace('bot score', botValue * botScore, 'ape score', apeValue * apeScore)
 	end
-	log.trace('bot score', botValue * botScore, 'ape score', apeValue * apeScore)
 
 	self.botCoin = self.botCoin + botValue * botScore
 	self.apeCoin = self.apeCoin + apeValue * apeScore
 	self.baize.botScoreLabel.text = string.format('Bot $%d', self.botCoin)
 	self.baize.apeScoreLabel.text = string.format('Ape $%d', self.apeCoin)
 
-	-- move bot selected cards to stash
+	-- move selected bot cards to stash
 	local src = self.baize.botHand.cards
 	for i = #src, 1, -1 do
-		src[i]:flipDown()
 		if src[i].selected then
 			src[i]:unselect()
 			local c = table.remove(src, i)
-			-- log.trace('remove bot card', i, c)
 			self.baize.stash:push(c)
 		end
+	end
+	-- hide remaining bot cards
+	for _, c in ipairs(self.baize.botHand.cards) do
+		c:flipDown()
 	end
 	-- refill bot hand from stock
 	while #self.baize.stock.cards > 0 and #self.baize.botHand.cards < self.baize.botHand.size do
@@ -226,7 +222,6 @@ function Jinn:cashout()
 		if src[i].selected then
 			src[i]:unselect()
 			local c = table.remove(src, i)
-			-- log.trace('remove ape card', i, c)
 			self.baize.stash:push(c)
 		end
 	end
@@ -248,17 +243,22 @@ function Jinn:cashout()
 end
 
 function Jinn:action()
-    -- log.info('Jinn action', self.state)
+
+	-- log.info('Jinn action', self.state)
 	if self.state == 'setup' then
 		self.round = self.round + 1
 		self.baize:deal()
 		self:botHandChanged()
 		self:apeHandChanged()
+		
 		self.baize.roundLabel.text = string.format('Round %d', self.round)
-		-- self.baize.botTypeLabel.text = ''
+		
 		self.baize.botScoreLabel.text = string.format('Bot $%d', self.botCoin)
-		-- self.baize.apeTypeLabel.text = ''
-		self.baize.apeScoreLabel.text = string.format('You $%d', self.apeCoin)
+		self.baize.apeScoreLabel.text = string.format('Ape $%d', self.apeCoin)
+		
+		self.baize.botTypeLabel.state = 'hidden'
+		self.baize.botMultLabel.state = 'hidden'
+
 		self.baize.apeHand.sel = nil
 		self.baize.playButton.state = 'disabled'
 		self.baize.cashoutButton.state = 'hidden'
@@ -275,12 +275,17 @@ function Jinn:action()
 		self.baize.cashoutButton.state = 'hidden'
 		-- waiting for player to discard, do nothing
 	elseif self.state == 'botDraw' then
-		-- cheat: if bot hand > possible ape hand, then play
+		-- bot must play, or take a card from stock or discard
+		-- cheat: if bot hand > ape hand, then play
+
+		assert(self.baize.botHand.sel)
+		local botScore = self.baize.botHand.sel.value * self.baize.botHand.sel.score
+		
+		-- ape may have nothing selected
 		local arr = self.baize.apeHand:createCopy('all')
-		local apeScore = poker.handScore[poker.handTypeEx(arr)].us
-		arr = self.baize.botHand:createCopy('all')
-		local botScore = poker.handScore[poker.handTypeEx(arr)].us
-		log.trace('scores: bot:', botScore, 'ape:', apeScore)
+		local info = poker.handTypeEx(arr)
+		local apeScore = info.value * info.score
+
 		if botScore > apeScore then
 			self:play()
 		else
@@ -291,18 +296,20 @@ function Jinn:action()
 			arr = self.baize.botHand:createCopy('all')
 			local c = self.baize.stock:peek()
 			if not c then
-				log.warn('Stock is empty')
+				log.warn('botDraw: Stock is empty')
 			else
 				table.insert(arr, {ord=c.ord, suit=c.suit})
-				local stockScore = poker.handScore[poker.handTypeEx(arr)].us
+				info = poker.handTypeEx(arr)
+				local stockScore = info.value * info.score
 
 				arr = self.baize.botHand:createCopy('all')
 				c = self.baize.discard:peek()
 				if not c then
-					log.warn('Discard pile is empty')
+					log.warn('botDraw: Discard is empty')
 				else
 					table.insert(arr, {ord=c.ord, suit=c.suit})
-					local discardScore = poker.handScore[poker.handTypeEx(arr)].us
+					info = poker.handTypeEx(arr)
+					local discardScore = info.value * info.score
 
 					if stockScore > discardScore then
 						self.baize.botHand:push(self.baize.stock:pop())
@@ -316,7 +323,9 @@ function Jinn:action()
 		end
 	elseif self.state == 'botDiscard' then
 		local arr = self.baize.botHand:createCopy('all')
-		local bestScore = poker.handScore[poker.handTypeEx(arr)].us
+		local info  = poker.handTypeEx(arr)
+		local bestScore = info.value * info.score
+
 		local discardIndex = 1
 		for i = 1, #arr do
 			local arr2 = {}
@@ -325,14 +334,14 @@ function Jinn:action()
 					table.insert(arr2, arr[j])
 				end
 			end
-			local score2 = poker.handScore[poker.handTypeEx(arr2)].us
-			-- discarding a card cannot make the hand score better
-			-- so settle for not making it worse
-			if score2 == bestScore then
+			info = poker.handTypeEx(arr2)
+			local score2 = info.value * info.score
+			if score2 >= bestScore then
 				discardIndex = i
 				break
 			end
 		end
+		assert(self.baize.botHand.cards[discardIndex])
 		local c = self.baize.botHand:remove(discardIndex)
 		self.baize.discard:push(c)
 		self:botHandChanged()
@@ -342,13 +351,6 @@ function Jinn:action()
 	elseif self.state == 'cashout' then
 		self.baize.playButton.state = 'hidden'
 		self.baize.cashoutButton.state = 'active'
-		self.baize.botScoreLabel.text = string.format('%d x %d',
-			valueTotal(self.baize.botHand.sel.cards),
-			self.baize.botHand.sel.score)
-		self.baize.apeScoreLabel.text = string.format('%d x %d',
-			valueTotal(self.baize.apeHand.sel.cards),
-			self.baize.apeHand.sel.score)
-		-- waiting for player to press cashout button, do nothing
 	end
 
 end

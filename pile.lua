@@ -44,7 +44,7 @@ end
 
 function Pile:log()
 	local str = ''
-    for i, c in ipairs(self.cards) do
+	for i, c in ipairs(self.cards) do
 		str = str .. tostring(c)
 		-- str = str .. string.format('%d) %s %d ', i, c, c.x)
 	end
@@ -54,7 +54,7 @@ end
 ---@return Pile
 function Pile.new()
 	local o = {x=0, y=0, width=_G.SETTINGS.cardWidth, height=_G.SETTINGS.cardHeight, cards={}}
-    return setmetatable(o, Pile)
+	return setmetatable(o, Pile)
 end
 
 ---@return Card
@@ -73,8 +73,8 @@ end
 
 ---@param c Card
 function Pile:push(c)
-    assert(self.cards)
-    assert(Card.isCard(c))
+	assert(self.cards)
+	assert(Card.isCard(c))
 	table.insert(self.cards, c)
 	c.owner = self
 	c:transitionTo(self.x, self.y)
@@ -84,18 +84,18 @@ end
 ---@return Card
 function Pile:remove(i)
 	local card
-    if type(i) == 'number' then
-        card = table.remove(self.cards, i)
-    elseif type(i) == 'string' then
-        for j, c in ipairs(self.cards) do
-            if c.textureId == i then
-                card = table.remove(self.cards, j)
-            end
-        end
-    else
-        assert(false, 'remove argument must be number or string, not', type(i))
-    end
-    if card then card.owner = nil end
+	if type(i) == 'number' then
+		card = table.remove(self.cards, i)
+	elseif type(i) == 'string' then
+		for j, c in ipairs(self.cards) do
+			if c.textureId == i then
+				card = table.remove(self.cards, j)
+			end
+		end
+	else
+		assert(false, 'remove argument must be number or string, not', type(i))
+	end
+	if card then card.owner = nil end
 	return card
 end
 
@@ -111,8 +111,8 @@ end
 ---@param y integer
 function Pile:setPosition(x, y)
 	self.x = x
-    self.y = y
-    self:repositionCards()
+	self.y = y
+	self:repositionCards()
 end
 
 ---@param c Card, still in it's owning pile

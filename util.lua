@@ -127,7 +127,7 @@ end
 
 ---@param colorName string
 function Util.setColor(colorName)
-    love.graphics.setColor(love.math.colorFromBytes(unpack(_G.COLORS[colorName])))
+	love.graphics.setColor(love.math.colorFromBytes(unpack(_G.COLORS[colorName])))
 end
 
 ---@param ord number
@@ -150,12 +150,12 @@ end
 
 function Util.printCentered(text, x, y, w, h)
 	assert(type(text)=='string')
-    local font = love.graphics.getFont()
+	local font = love.graphics.getFont()
 	if not font then return end
-    local _, lines = font:getWrap(text, w)
-    local textHeight = #lines * font:getHeight() * font:getLineHeight()
-    local textY = y + (h - textHeight) / 2
-    love.graphics.printf(text, x, textY, w, "center")
+	local _, lines = font:getWrap(text, w)
+	local textHeight = #lines * font:getHeight() * font:getLineHeight()
+	local textY = y + (h - textHeight) / 2
+	love.graphics.printf(text, x, textY, w, "center")
 end
 
 return Util

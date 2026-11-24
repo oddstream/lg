@@ -35,7 +35,7 @@ end
 
 ---@param key string
 function Splash:keyPressed(key)
-    -- print('Splash key pressed: ' .. key)
+	-- print('Splash key pressed: ' .. key)
 	TransitionToScene(Baize.new())
 end
 

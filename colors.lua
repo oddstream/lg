@@ -181,8 +181,8 @@ _G.COLORS = {
 
 	-- use color picked from the LÖVE logo image for the gradient background
 	-- https://imagecolorpicker.com/
-    LoveLogoBlue = { 39, 170, 225},
-    LoveLogoPink = {231,  74, 153},
+	LoveLogoBlue = { 39, 170, 225},
+	LoveLogoPink = {231,  74, 153},
 
 	UiBackground = {0x32,0x32,0x32,0xff},
 	UiForeground = {0xff,0xff,0xff,0xff},

@@ -6,16 +6,12 @@ local Card = require 'card'
 local Pile = require 'pile'
 local Util = require 'util'
 
----@class (exact) Selection
----@field type string
----@field score integer
----@field cards Card[]
 
 ---@class (exact) Hand: Pile
 ---@field __index Hand
 ---@field __tostring function
 ---@field size integer
----@field sel Selection
+---@field sel PokerHandInfo
 ---@field new function
 ---@field flipFunc function
 ---@field setPosition function

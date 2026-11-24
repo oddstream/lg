@@ -29,6 +29,9 @@ _G.ALLORDS = { 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 }
 ---@type string[]
 _G.ORD2STRING = {'1','2','3','4','5','6','7','8','9','10','J','Q','K','A'}
 
+---@type integer[]
+_G.CARDVALUES = {0,2,3,4,5,6,7,8,9,10,10,10,10,11}
+
 ---@type string
 _G.ORD_FONT = 'assets/fonts/Acme-Regular.ttf'
 
