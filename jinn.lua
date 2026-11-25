@@ -9,19 +9,20 @@ local poker = require 'poker'
 local Card  = require 'card'
 
 local roundHandSizes = {
-	{bot=6, ape=8},
+	{bot=6, ape=8},	-- ape>8 overlaps the Play button
 	{bot=7, ape=8},
-	{bot=7, ape=7},
+	{bot=7, ape=8},
+	{bot=8, ape=8},
 	{bot=8, ape=7},
-	{bot=8, ape=6},
-	{bot=9, ape=6},
+	{bot=9, ape=7},
+	{bot=10, ape=7},
 }
 
 ---@class (exact) Jinn
 ---@field __index Jinn
 ---@field __tostring function
 ---@field baize table
----@field state string 'setup'|'apeDraw'|'apeDiscard'|'botDraw'|'botDiscard'|'cashout'
+---@field state string 'setup'|'apeDraw'|'apeDiscard'|'botDraw'|'botDiscard'|'cashout'|'gameover'
 ---@field round integer
 ---@field botRoundsWon integer
 ---@field apeRoundsWon integer
@@ -304,7 +305,7 @@ function Jinn:action()
 		else
 			log.info('game tied', self.apeRoundsWon, ':', self.botRoundsWon)
 		end
-		love.event.quit(0)
+		PopScene()	-- pop Baize to go back to Menu
 	elseif self.state == 'apeDraw' then
 		if self.baize.apeHand:numberSelected() > 0 then
 			self.baize.playButton.state = 'active'

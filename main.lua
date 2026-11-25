@@ -51,6 +51,10 @@ function TransitionToScene(scene)
 	stage:push(scene)
 end
 
+function PopScene()
+	stage:pop()
+end
+
 ---@param args table
 function love.load(args)
 	math.randomseed(os.time())

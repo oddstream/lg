@@ -77,7 +77,7 @@ function Baize.new()
 		radius = _G.SETTINGS.cardWidth / 2,
 		backColor = 'CornflowerBlue',
 		foreColor = 'Ivory',
-		jinCommand = 'play'
+		fn = function() _G.Gin:play() end,
 	})
 	o.cashoutButton = Button.new({
 		state = 'disabled',
@@ -85,7 +85,7 @@ function Baize.new()
 		radius = _G.SETTINGS.cardWidth / 2,
 		backColor = 'Gold',
 		foreColor = 'Black',
-		jinCommand = 'cashout'
+		fn = function() _G.Gin:cashout() end,
 	})
 	o.buttons = {o.playButton,o.cashoutButton}
 
@@ -161,12 +161,14 @@ function Baize.new()
 		o.apeScoreLabel,o.apeTypeLabel,o.apeMultLabel
 	}
 
+	setmetatable(o, Baize)
+
 	o:resize(love.graphics.getWidth(), love.graphics.getHeight())
 
 	o.elapsed = 10.0	-- count down Jinn action; start high to get going immediately
 	_G.Gin = Jinn.new(o)
 
-	return setmetatable(o, Baize)
+	return o
 end
 
 function Baize:load()
@@ -179,15 +181,8 @@ function Baize:unload()
 end
 
 function Baize:deal()
-	-- The dealer deals ten cards to each player one at a time
-	-- starting with their opponent, and then places the next card
-	-- in the deck face up. This begins the discard pile. The face
-	-- down pile is known as the stock pile.
-	log.trace('stash rect', self.stash:getRect())
-	-- recall all cards from piles
-	-- log.info(#self.stock.cards, 'cards in stock')
+	-- recall all cards from all piles (not stock)
 	for _, p in ipairs({self.stash, self.botHand, self.discard, self.apeHand}) do
-		-- log.info('recall', #p.cards, 'from', p)
 		while #p.cards > 0 do
 			self.stock:push(p:pop())
 		end
@@ -321,7 +316,7 @@ function Baize:mousePressed(x, y, button, istouch, presses)
 	else
 		local widget = self:findWidgetAt(x, y)
 		if widget then
-			-- log.info('widget mousePressed', widget.jinCommand, widget.state)
+			-- log.info('widget mousePressed', widget.state)
 			if widget.state == 'active' then
 				self.stroke = {
 					init = {x = x, y = y},
@@ -330,7 +325,7 @@ function Baize:mousePressed(x, y, button, istouch, presses)
 				}
 				widget.state = 'pressed'
 			else
-				log.warn('widget is not active', widget.jinCommand, widget.state)
+				log.warn('widget is not active', widget.state)
 			end
 		end
 	end
@@ -448,11 +443,9 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 	elseif self.stroke.objectType == 'widget' then
 		-- check mouse is still over button before triggering action
 		local widget = self.stroke.object
-		-- log.info('widget released', widget.jinCommand)
 		if widget:isPointOver(x, y) then
-			-- log.info('button pressed', widget.jinCommand)
-			if type(widget.jinCommand) == 'string' and type(_G.Gin[widget.jinCommand]) == 'function' then
-				_G.Gin[widget.jinCommand](_G.Gin)
+			if type(widget.fn) == 'function' then
+				widget.fn()
 			end
 		end
 		widget.state = 'active'

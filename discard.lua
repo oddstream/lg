@@ -44,13 +44,11 @@ end
 -- update, draw handled by Pile
 
 function Discard:draw()
-	if #self.cards == 0 then
-		-- show where the drag target is
-		love.graphics.setColor(1, 1, 1, 0.1)
-		local x, y, w, h = self:getRect()
-		love.graphics.rectangle('fill', x, y, w, h, _G.SETTINGS.cardRadius, _G.SETTINGS.cardRadius)
-		love.graphics.setColor(1, 1, 1, 1)
-	end
+	-- show where the drag target is
+	love.graphics.setColor(1, 1, 1, 0.1)
+	local x, y, w, h = self:getRect()
+	love.graphics.rectangle('fill', x, y, w, h, _G.SETTINGS.cardRadius, _G.SETTINGS.cardRadius)
+	love.graphics.setColor(1, 1, 1, 1)
 end
 
 return Discard

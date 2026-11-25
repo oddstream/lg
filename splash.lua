@@ -3,7 +3,7 @@
 local Util = require 'util'
 
 local Scene = require 'scene'
-local Baize = require 'baize'
+local Menu = require 'menu'
 
 require 'colors'
 
@@ -36,7 +36,8 @@ end
 ---@param key string
 function Splash:keyPressed(key)
 	-- print('Splash key pressed: ' .. key)
-	TransitionToScene(Baize.new())
+	PopScene()
+	TransitionToScene(Menu.new())
 end
 
 function Splash:resize(w, h)
@@ -65,7 +66,8 @@ function Splash:update(dt)
 		self.alpha = math.max(0, 1 - (self.elapsed - self.hold) / self.fade)
 	end
 	if self.alpha <= 0.0 then
-		TransitionToScene(Baize.new())
+		PopScene()
+		TransitionToScene(Menu.new())
 	end
 end
 

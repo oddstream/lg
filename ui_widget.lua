@@ -6,7 +6,7 @@ local Util = require 'util'
 ---@field __index Widget
 ---@field new function
 ---@field state string 'active'|'hidden'|'pressed'|'disabled'
----@field jinCommand string
+---@field fn function
 ---@field x number
 ---@field y number
 ---@field width number

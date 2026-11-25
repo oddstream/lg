@@ -93,12 +93,14 @@ function Stock:draw()
 	if self.sizeFont == nil then
 		self.sizeFont = love.graphics.newFont(_G.SUIT_FONT, _G.SETTINGS.cardHeight / 8)
 	end
-	love.graphics.setFont(self.sizeFont)
-	Util.setColor('Ivory')
-	-- assert(self.width and type(self.width)=='number' and self.width == _G.SETTINGS.cardWidth)
-	-- assert(self.height and type(self.height)=='number' and self.height == _G.SETTINGS.cardHeight)
-	local gap = _G.SETTINGS.cardHeight / 8
-	Util.printCentered(tostring(#self.cards), self.x, self.y + self.height + gap, self.width, self.sizeFont:getLineHeight())
+	if #self.cards > 0 then
+		love.graphics.setFont(self.sizeFont)
+		Util.setColor('Ivory')
+		-- assert(self.width and type(self.width)=='number' and self.width == _G.SETTINGS.cardWidth)
+		-- assert(self.height and type(self.height)=='number' and self.height == _G.SETTINGS.cardHeight)
+		local gap = _G.SETTINGS.cardHeight / 8
+		Util.printCentered(tostring(#self.cards), self.x, self.y + self.height + gap, self.width, self.sizeFont:getLineHeight())
+	end
 end
 
 return Stock

@@ -8,7 +8,6 @@ local Util = require 'util'
 ---@field radius number
 ---@field foreColor string
 ---@field backColor string
----@field jinCommand string
 
 local Button = {}
 Button.__index = Button
