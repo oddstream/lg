@@ -1,4 +1,4 @@
--- scene_splash.lua
+-- splash.lua
 
 local Util = require 'util'
 
@@ -35,13 +35,11 @@ end
 
 ---@param key string
 function Splash:keyPressed(key)
-	-- print('Splash key pressed: ' .. key)
 	PopScene()
 	TransitionToScene(Menu.new())
 end
 
 function Splash:resize(w, h)
-	-- print("Splash resized to: " .. w .. "x" .. h)
 	self.backgroundCanvas = nil
 end
 

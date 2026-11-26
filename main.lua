@@ -39,7 +39,7 @@ _G.ORD_FONT = 'assets/fonts/Acme-Regular.ttf'
 _G.SUIT_FONT = 'assets/fonts/DejaVuSans.ttf'
 
 ---@type love.Font
-_G.uiFont = love.graphics.newFont(_G.ORD_FONT, _G.SETTINGS.cardWidth / 6)
+_G.UI_FONT = love.graphics.newFont(_G.ORD_FONT, _G.SETTINGS.cardWidth / 6)
 
 -- instance of a Scenes object, holding stack of scenes, with the current scene at index 1
 -- local to this file, but accessible to all scene files via the TransitionToScene() function below
@@ -47,7 +47,6 @@ local stage
 
 function TransitionToScene(scene)
 	assert(scene and type(scene) == "table" and type(scene.name) == "string", "Invalid scene object")
-	-- print("Transitioning to scene: " .. scene.name)
 	stage:push(scene)
 end
 
@@ -56,6 +55,7 @@ function PopScene()
 end
 
 ---@param args table
+---@diagnostic disable-next-line: duplicate-set-field
 function love.load(args)
 	math.randomseed(os.time())
 
@@ -76,6 +76,7 @@ end
 ---@param button number
 ---@param istouch boolean
 ---@param presses number
+---@diagnostic disable-next-line: duplicate-set-field
 function love.mousepressed(x, y, button, istouch, presses)
 	stage:mousePressed(x, y, button, istouch, presses)
 end
@@ -85,6 +86,7 @@ end
 ---@param dx number
 ---@param dy number
 ---@param istouch boolean
+---@diagnostic disable-next-line: duplicate-set-field
 function love.mousemoved(x, y, dx, dy, istouch)
 	stage:mouseMoved(x, y, dx, dy, istouch)
 end
@@ -94,26 +96,30 @@ end
 ---@param button number
 ---@param istouch boolean
 ---@param presses number
+---@diagnostic disable-next-line: duplicate-set-field
 function love.mousereleased(x, y, button, istouch, presses)
 	stage:mouseReleased(x, y, button, istouch, presses)
 end
 
 ---@param key string
+---@diagnostic disable-next-line: duplicate-set-field
 function love.keypressed(key)
 	stage:keyPressed(key)
 end
 
+---@diagnostic disable-next-line: duplicate-set-field
 function love.resize(w, h)
-  _G.SETTINGS.resize(w, h)
-  _G.cardFaceTextures, _G.cardBackTexture, _G.cardShadowTexture = cardTextureFactory()
-  stage:resize(w, h)
+	_G.SETTINGS.resize(w, h)
+	stage:resize(w, h)
 end
 
 ---@param dt_seconds number
+---@diagnostic disable-next-line: duplicate-set-field
 function love.update(dt_seconds)
 	stage:update(dt_seconds)
 end
 
+---@diagnostic disable-next-line: duplicate-set-field
 function love.draw()
 	stage:draw()
 end

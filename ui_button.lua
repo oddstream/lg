@@ -59,7 +59,7 @@ function Button:draw()
 	love.graphics.circle('line', x, y, self.radius)
 
 	if self.text then
-		love.graphics.setFont(_G.uiFont)
+		love.graphics.setFont(_G.UI_FONT)
 		
 		local foreColor
 		if not self.foreColor then
@@ -69,7 +69,7 @@ function Button:draw()
 		end
 		Util.setColor(foreColor)
 		-- center the text in the circle
-		local textY = y - _G.uiFont:getHeight() / 2
+		local textY = y - _G.UI_FONT:getHeight() / 2
 		love.graphics.printf(self.text, x - self.radius, textY, self.radius * 2, "center")
 	end
 

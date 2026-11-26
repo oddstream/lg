@@ -15,7 +15,7 @@ local roundHandSizes = {
 	{bot=8, ape=8},
 	{bot=8, ape=7},
 	{bot=9, ape=7},
-	{bot=10, ape=7},
+	{bot=9, ape=7},
 }
 
 ---@class (exact) Jinn
@@ -60,15 +60,16 @@ function Jinn:botHandChanged()
 	local hand, typeLabel, multLabel = self.baize.botHand, self.baize.botTypeLabel, self.baize.botMultLabel
 	hand:sort()
 	hand:fan()
+	---@type Card[]
 	local arr = hand:createCopy('all')
 	if #arr > 0 then
 		hand.sel = poker.handTypeEx(arr)
 		typeLabel.text = hand.sel.type
-		multLabel.text = string.format('%d x %d', hand.sel.value, hand.sel.score)
+		multLabel.text = string.format('%d x %d = %d', hand.sel.value, hand.sel.score, hand.sel.value * hand.sel.score)
 	else
 		hand.sel = nil
 		typeLabel.text = '(no selection)'
-		multLabel.text = '0 x 0'
+		multLabel.text = '0 x 0 = 0'
 	end
 end
 
@@ -76,15 +77,16 @@ function Jinn:apeHandChanged()
 	local hand, typeLabel, multLabel = self.baize.apeHand, self.baize.apeTypeLabel, self.baize.apeMultLabel
 	hand:sort()
 	hand:fan()
+	---@type Card[]
 	local arr = hand:createCopy('selected')
 	if #arr > 0 then
 		hand.sel = poker.handTypeEx(arr)
 		typeLabel.text = hand.sel.type
-		multLabel.text = string.format('%d x %d', hand.sel.value, hand.sel.score)
+		multLabel.text = string.format('%d x %d = %d', hand.sel.value, hand.sel.score, hand.sel.value * hand.sel.score)
 	else
 		hand.sel = nil
 		typeLabel.text = '(no selection)'
-		multLabel.text = '0 x 0'
+		multLabel.text = '0 x 0 = 0'
 	end
 end
 
@@ -188,14 +190,14 @@ function Jinn:cashout()
 
 	-- update score/coins
 	assert(self.baize.botHand.sel)
-	local botValue = valueTotal(self.baize.botHand.sel.cards)
-	local botScore = self.baize.botHand.sel.score
 	local apeScore = 0
 	local apeValue = 0
 	if self.baize.apeHand.sel then
 		apeScore = self.baize.apeHand.sel.score
 		apeValue = valueTotal(self.baize.apeHand.sel.cards)
 	end
+	local botValue = valueTotal(self.baize.botHand.sel.cards)
+	local botScore = self.baize.botHand.sel.score
 
 	-- TODO UI bling here
 	if self.baize.apeHand.sel then
@@ -206,7 +208,7 @@ function Jinn:cashout()
 		else
 			log.info('draw')
 		end
-		log.trace('bot score', botValue * botScore, 'ape score', apeValue * apeScore)
+		log.info('bot score', botValue * botScore, 'ape score', apeValue * apeScore)
 	end
 
 	self.botScoreThisRound = self.botScoreThisRound + botValue * botScore
@@ -214,13 +216,13 @@ function Jinn:cashout()
 	self.baize.botScoreLabel.text = string.format('Bot %d', self.botScoreThisRound)
 	self.baize.apeScoreLabel.text = string.format('Ape %d', self.apeScoreThisRound)
 
-	-- move selected bot cards to stash
+	-- move selected bot cards to discard
 	local src = self.baize.botHand.cards
 	for i = #src, 1, -1 do
 		if src[i].selected then
 			src[i]:unselect()
 			local c = table.remove(src, i)
-			self.baize.stash:push(c)
+			self.baize.discard:pushBottom(c)
 		end
 	end
 	-- hide remaining bot cards
@@ -233,13 +235,13 @@ function Jinn:cashout()
 	end
 	self:botHandChanged()
 
-	-- move selected ape cards to stash
+	-- move selected ape cards to discard
 	src = self.baize.apeHand.cards
 	for i = #src, 1, -1 do
 		if src[i].selected then
 			src[i]:unselect()
 			local c = table.remove(src, i)
-			self.baize.stash:push(c)
+			self.baize.discard:pushBottom(c)
 		end
 	end
 	-- refill ape hand from stock
@@ -248,10 +250,7 @@ function Jinn:cashout()
 	end
 	self:apeHandChanged()
 
-	-- log.trace('#stash', #self.baize.stash.cards)
-	-- log.trace('#stock', #self.baize.stock.cards)
-
-	-- goto setup state if stock is empty, otherwise goto apeDraw state
+	-- goto setup or gameover state if stock is empty, otherwise goto apeDraw state
 	if #self.baize.stock.cards > 0 then
 		self.state = 'apeDraw'
 	else
@@ -270,7 +269,6 @@ end
 
 function Jinn:action()
 
-	-- log.info('Jinn action', self.state)
 	if self.state == 'setup' then
 		self.round = self.round + 1
 		self.botScoreThisRound = 0
@@ -280,7 +278,7 @@ function Jinn:action()
 		self.baize:deal()
 		self:botHandChanged()
 		self:apeHandChanged()
-		
+
 		self.baize.roundLabel.text = string.format('Round %d', self.round)
 		self.baize.roundProgressLabel.text = string.format('Bot %d, Ape %d',
 			self.botRoundsWon,
@@ -288,7 +286,7 @@ function Jinn:action()
 		)
 		self.baize.botScoreLabel.text = string.format('Bot %d', self.botScoreThisRound)
 		self.baize.apeScoreLabel.text = string.format('Ape %d', self.apeScoreThisRound)
-		
+		--
 		self.baize.botTypeLabel.state = 'hidden'
 		self.baize.botMultLabel.state = 'hidden'
 
@@ -305,6 +303,7 @@ function Jinn:action()
 		else
 			log.info('game tied', self.apeRoundsWon, ':', self.botRoundsWon)
 		end
+		-- TODO UI bling
 		PopScene()	-- pop Baize to go back to Menu
 	elseif self.state == 'apeDraw' then
 		if self.baize.apeHand:numberSelected() > 0 then
@@ -323,20 +322,28 @@ function Jinn:action()
 
 		assert(self.baize.botHand.sel)
 		local botScore = self.baize.botHand.sel.value * self.baize.botHand.sel.score
-		
+
 		-- ape may have nothing selected
+		---@type Card[]
 		local arr = self.baize.apeHand:createCopy('all')
+		---@type PokerHandInfo
 		local info = poker.handTypeEx(arr)
+		---@type number
 		local apeScore = info.value * info.score
 
 		if botScore > apeScore then
 			self:play()
+		elseif #self.baize.stock.cards == 0 or #self.baize.discard.cards == 0 then
+			-- if stock or discard empty, bot can't have a fair turn
+			self.state = 'cashout'
 		else
 			-- move a card from stock or discard to botHand
 			-- create a copy of hand, add peeked stock card, test (cheat)
 			-- create a copy of hand, add peeked discard card, test
 			-- use best source
+			---@type Card[]
 			arr = self.baize.botHand:createCopy('all')
+			---@type Card
 			local c = self.baize.stock:peek()
 			if not c then
 				log.warn('botDraw: Stock is empty')
@@ -365,12 +372,17 @@ function Jinn:action()
 			self.state = 'botDiscard'
 		end
 	elseif self.state == 'botDiscard' then
+		---@type Card[]
 		local arr = self.baize.botHand:createCopy('all')
+		---@type PokerHandInfo
 		local info  = poker.handTypeEx(arr)
+		---@type number
 		local bestScore = info.value * info.score
 
+		---@type integer
 		local discardIndex = 1
 		for i = 1, #arr do
+			---@type Card[]
 			local arr2 = {}
 			for j = 1, #arr do
 				if i ~= j then

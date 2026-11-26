@@ -46,7 +46,6 @@ require 'colors'
 ---@field resize function
 ---@field update function
 ---@field draw function
----@field stash Pile
 ---@field stock Stock
 ---@field discard Discard
 ---@field botHand Hand
@@ -60,7 +59,6 @@ function Baize.new()
 	local o = Scene.new('baize')
 
 	o.backgroundCanvas = nil
-	o.stash = Pile.new()
 	o.stock = Stock.new()
 	o.stock:fill()
 	log.info('Baize.new() created', #o.stock.cards, 'cards')
@@ -69,7 +67,7 @@ function Baize.new()
 	o.botHand = Hand.new(Card.flipDown)
 	o.apeHand = Hand.new(Card.flipUp)
 
-	o.allPiles = { o.stash, o.stock, o.discard, o.botHand, o.apeHand }
+	o.allPiles = { o.stock, o.discard, o.botHand, o.apeHand }
 
 	o.playButton = Button.new({
 		state = 'disabled',
@@ -77,7 +75,7 @@ function Baize.new()
 		radius = _G.SETTINGS.cardWidth / 2,
 		backColor = 'CornflowerBlue',
 		foreColor = 'Ivory',
-		fn = function() _G.Gin:play() end,
+		fn = function() o.jinn:play() end,
 	})
 	o.cashoutButton = Button.new({
 		state = 'disabled',
@@ -85,7 +83,7 @@ function Baize.new()
 		radius = _G.SETTINGS.cardWidth / 2,
 		backColor = 'Gold',
 		foreColor = 'Black',
-		fn = function() _G.Gin:cashout() end,
+		fn = function() o.jinn:cashout() end,
 	})
 	o.buttons = {o.playButton,o.cashoutButton}
 
@@ -95,7 +93,7 @@ function Baize.new()
 	-- [ Bot 12 x 10 ]
 	-- [ Ape Score ]
 	-- [ Ape Hand Type ]
- 	-- [ Ape 7 x 2 ]
+	-- [ Ape 7 x 2 ]
 
 	o.roundLabel = Label.new({
 		width = _G.SETTINGS.cardHeight,
@@ -166,7 +164,7 @@ function Baize.new()
 	o:resize(love.graphics.getWidth(), love.graphics.getHeight())
 
 	o.elapsed = 10.0	-- count down Jinn action; start high to get going immediately
-	_G.Gin = Jinn.new(o)
+	o.jinn = Jinn.new(o)
 
 	return o
 end
@@ -182,7 +180,7 @@ end
 
 function Baize:deal()
 	-- recall all cards from all piles (not stock)
-	for _, p in ipairs({self.stash, self.botHand, self.discard, self.apeHand}) do
+	for _, p in ipairs({self.botHand, self.discard, self.apeHand}) do
 		while #p.cards > 0 do
 			self.stock:push(p:pop())
 		end
@@ -377,12 +375,12 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 			local dst = self:largestIntersection(card)
 			if not dst then
 				-- dragging a hand card into nowhere - short cut for dragging to discard pile
-				if _G.Gin:isAllowed(card, card.owner, self.discard) then
+				if self.jinn:isAllowed(card, card.owner, self.discard) then
 					local from, to = card.owner, self.discard
 					from:removeCard(card)
 					to:push(card)
 					card:stopDrag()
-					_G.Gin:notifyCardMove(card, from, to)
+					self.jinn:notifyCardMove(card, from, to)
 				else
 					card:cancelDrag()
 					card.owner:fan() -- animate dragged card back to owner
@@ -393,12 +391,12 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 					card:stopDrag()
 					card.owner:cardDragged(card)
 				else -- dragging card to a different pile
-					if _G.Gin:isAllowed(card, card.owner, dst) then
+					if self.jinn:isAllowed(card, card.owner, dst) then
 						local from, to = card.owner, dst
 						from:removeCard(card)
 						dst:insertCard(card)
 						card:stopDrag()
-						_G.Gin:notifyCardMove(card, from, to)
+						self.jinn:notifyCardMove(card, from, to)
 					else
 						card:cancelDrag()
 						card.owner:fan() -- animate dragged card back to owner
@@ -408,20 +406,20 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 		else -- card was not dragged, so we'll call that a tap
 			-- log.info('mouseReleased', card, 'tapped (not dragged)')
 			if card.owner == self.stock then
-				if _G.Gin:isAllowed(card, self.stock, self.apeHand) then
+				if self.jinn:isAllowed(card, self.stock, self.apeHand) then
 					card:stopDrag()
 					self.stock:pop() -- .owner is now nil
 					self.apeHand:push(card)
-					_G.Gin:notifyCardMove(card, self.stock, self.apeHand)
+					self.jinn:notifyCardMove(card, self.stock, self.apeHand)
 				else
 					card:cancelDrag()
 				end
 			elseif card.owner == self.discard then
-				if _G.Gin:isAllowed(card, self.discard, self.apeHand) then
+				if self.jinn:isAllowed(card, self.discard, self.apeHand) then
 					card:stopDrag()
 					self.discard:pop()
 					self.apeHand:push(card)
-					_G.Gin:notifyCardMove(card, self.discard, self.apeHand)
+					self.jinn:notifyCardMove(card, self.discard, self.apeHand)
 				else
 					card:cancelDrag()
 				end
@@ -433,7 +431,7 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 					log.warn('cannot select more than 5 cards')
 				else
 					card:toggleSelect()
-				  	_G.Gin:notifyCardTapped(card)
+					self.jinn:notifyCardTapped(card)
 				end
 			else
 				card:cancelDrag()
@@ -471,17 +469,12 @@ end
 
 ---@param key string
 function Baize:keyPressed(key)
-	-- log.info("baize key pressed: " .. key)
 	if key == 'escape' then
-		love.event.quit(0)
+		PopScene()	-- pop Baize to go back to Menu
 	elseif key == 'f' then
 		for _, c in ipairs(self.botHand.cards) do
 			c:flip()
 		end
-	elseif key == 'p' and _G.Gin.state == 'apeDraw' then
-		_G.Gin:play()
-	elseif key == 'r' then
-		log.info(self.botHand, self.stock, self.discard, self.apeHand)
 	end
 end
 
@@ -490,18 +483,16 @@ end
 function Baize:resize(w, h)
 	-- log.info("Baize resized to: " .. w .. "x" .. h)
 	self.backgroundCanvas = nil	-- regenerate this at next draw()
+
 	self.uiRect = {x=0, y=0, width=w/6, height=h}
 	self.cardRect = {x=self.uiRect.width, y=0, width=w-self.uiRect.width, height=h}
-	_G.uiFont = love.graphics.newFont(_G.ORD_FONT, _G.SETTINGS.cardWidth / 4)
+	_G.UI_FONT = love.graphics.newFont(_G.ORD_FONT, _G.SETTINGS.cardWidth / 4)
 
 	for _, p in ipairs(self.allPiles) do
 		p:resize(w, h)
 		p:layout(self.cardRect)
 		p:fan()
 	end
-
-	-- position the stash off the screen
-	self.stash:setPosition((w / 2) + (self.stash.width / 2), -self.stash.height)
 
 	-- all buttons sit at bottom of the screen/cardRect
 	for _, b in ipairs(self.buttons) do
@@ -526,8 +517,8 @@ function Baize:allCardsStatic()
 	-- experimental - wait for cards to stop animating
 	for _, p in ipairs(self.allPiles) do
 		for _, c in ipairs(p.cards) do
-            if not c:static() then
-            	log.trace('...')
+			if not c:static() then
+				log.trace('...')
 				return false
 			end
 		end
@@ -546,14 +537,14 @@ function Baize:update(dt_seconds)
 	end
 	self.elapsed = self.elapsed + dt_seconds
 	if self.elapsed > 1.0 and self:allCardsStatic() then
-		_G.Gin:action()
+		self.jinn:action()
 		self.elapsed = 0.0
 	end
 
 end
 
 function Baize:draw()
-   	if self.backgroundCanvas == nil then
+	if self.backgroundCanvas == nil then
 		self.backgroundCanvas = Util.createGradientCanvas(_G.COLORS.DarkGreen)
 	end
 	love.graphics.setColor(1,1,1,1)
@@ -567,14 +558,6 @@ function Baize:draw()
 			self.cardRect.y,
 			self.cardRect.x,
 			self.cardRect.y + self.cardRect.height)
-	end
-
-	-- draw the UI first, so cards can spill over it, rather than vice-a-versa
-	for _, b in ipairs(self.buttons) do
-		b:draw()
-	end
-	for _, l in ipairs(self.labels) do
-		l:draw()
 	end
 
 	for _, p in ipairs(self.allPiles) do
@@ -609,24 +592,32 @@ function Baize:draw()
 			end
 		end
 	end
+
+	for _, b in ipairs(self.buttons) do
+		b:draw()
+	end
+	for _, l in ipairs(self.labels) do
+		l:draw()
+	end
+
 --[[
 	if _G.SETTINGS.debug then
-		love.graphics.setFont(_G.uiFont)
+		love.graphics.setFont(_G.UI_FONT)
 		Util.setColor('Ivory')
 
 		if self.botHand.sel and self.botHand.sel.type then
-	  		local rx, ry, rw, rh = self.botHand:getRect()
+			local rx, ry, rw, rh = self.botHand:getRect()
 			local gap = _G.SETTINGS.cardHeight / 3
 			Util.printCentered(self.botHand.sel.type,
-				rx, ry + rh + gap, rw, _G.uiFont:getLineHeight())
+				rx, ry + rh + gap, rw, _G.UI_FONT:getLineHeight())
 		end
 		if self.apeHand.sel and self.apeHand.sel.cards and #self.apeHand.sel.cards > 0 then
-	   		local rx, ry, rw, rh = self.apeHand:getRect()
+			local rx, ry, rw, rh = self.apeHand:getRect()
 			local gap = _G.SETTINGS.cardHeight / 3
 			Util.printCentered(self.apeHand.sel.type,
-				rx, ry - gap, rw, _G.uiFont:getLineHeight())
+				rx, ry - gap, rw, _G.UI_FONT:getLineHeight())
 		end
-		love.graphics.print(_G.Gin.state, 0, 0)
+		love.graphics.print(self.jinn.state, 0, 0)
 	end
 ]]
 end

@@ -42,7 +42,7 @@ function Label:draw()
 	end
 
 	if self.text then
-		love.graphics.setFont(_G.uiFont)
+		love.graphics.setFont(_G.UI_FONT)
 
 		local foreColor
 		if not self.foreColor then

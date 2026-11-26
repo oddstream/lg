@@ -19,6 +19,7 @@ local Card = require 'card'
 ---@field peek function
 ---@field pop function
 ---@field push function
+---@field pushBottom function
 ---@field cardDragged function(c:Card)
 ---@field removeCard function(c:Card)
 ---@field insertCard function(c:Card)
@@ -76,6 +77,15 @@ function Pile:push(c)
 	assert(self.cards)
 	assert(Card.isCard(c))
 	table.insert(self.cards, c)
+	c.owner = self
+	c:transitionTo(self.x, self.y)
+end
+
+---@param c Card
+function Pile:pushBottom(c)
+	assert(self.cards)
+	assert(Card.isCard(c))
+	table.insert(self.cards, 1, c)
 	c.owner = self
 	c:transitionTo(self.x, self.y)
 end

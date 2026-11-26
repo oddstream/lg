@@ -5,23 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug Lua Interpreter",
-            "type": "lua-local",
+            "type": "lua",
             "request": "launch",
-            "program": {
-                "lua": "$HOME/love/love-11.5-x86_64.AppImage",
-                "file": "."
-            },
-			"args" : ["one", "two"]
+            "name": "Launch Lua File",
+            "program": "${workspaceFolder}/main.lua"
         },
-        {
-            "name": "Debug Custom Lua Environment",
-            "type": "lua-local",
-            "request": "launch",
-            "program": {
-                "command": "command"
-            },
-            "args": []
-        }
     ]
 }

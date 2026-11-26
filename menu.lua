@@ -1,4 +1,4 @@
--- scene_splash.lua
+-- menu.lua
 
 local Util = require 'util'
 
@@ -16,22 +16,22 @@ function Menu.new()
 	local o = Scene.new('menu')
 	setmetatable(o, Menu)
 
-    o.backgroundCanvas = nil
-    o.playButton = Button.new({
+	o.backgroundCanvas = nil
+	o.playButton = Button.new({
 		state = 'active',
 		text = 'Play',
 		radius = _G.SETTINGS.cardWidth / 2,
 		backColor = 'CornflowerBlue',
 		foreColor = 'Ivory',
-        fn = function() TransitionToScene(Baize.new()) end
+		fn = function() TransitionToScene(Baize.new()) end
 	})
-    o.quitButton = Button.new({
+		o.quitButton = Button.new({
 		state = 'active',
 		text = 'Quit',
 		radius = _G.SETTINGS.cardWidth / 2,
 		backColor = 'CornflowerBlue',
 		foreColor = 'Ivory',
-        fn = function() love.event.quit(0) end,
+		fn = function() love.event.quit(0) end,
 	})
 	o.buttons = {o.playButton,o.quitButton}
 
@@ -51,21 +51,21 @@ end
 
 ---@param key string
 function Menu:keyPressed(key)
-    if key == 'p' then
-        self.playButton.fn()
-    elseif key == 'q' or key == 'escape' then
-        self.quitButton.fn()
-    end
+	if key == 'p' then
+		self.playButton.fn()
+	elseif key == 'q' or key == 'escape' then
+		self.quitButton.fn()
+	end
 end
 
 ---@param x number
 ---@param y number
 ---@return Widget|Button|nil
 function Menu:findWidgetAt(x, y)
-    for _, b in ipairs(self.buttons) do
-	    if b:isPointOver(x, y) then
-		    return b
-        end
+	for _, b in ipairs(self.buttons) do
+		if b:isPointOver(x, y) then
+			return b
+		end
 	end
 	return nil
 end
@@ -76,10 +76,10 @@ end
 ---@param istouch boolean
 ---@param presses number
 function Menu:mousePressed(x, y, button, istouch, presses)
-    self.pressedButton = self:findWidgetAt(x,y)
-    if self.pressedButton then
-        self.pressedButton.state = 'pressed'
-    end
+	self.pressedButton = self:findWidgetAt(x,y)
+	if self.pressedButton then
+		self.pressedButton.state = 'pressed'
+	end
 end
 
 ---@param x number
@@ -88,26 +88,25 @@ end
 ---@param istouch boolean
 ---@param presses number
 function Menu:mouseReleased(x, y, button, istouch, presses)
-    if self.pressedButton then
-        if self.pressedButton == self:findWidgetAt(x,y) then
-            self.pressedButton.fn()
-        end
-        self.pressedButton.state = 'active'
-        self.pressedButton = nil
-    end
+	if self.pressedButton then
+		if self.pressedButton == self:findWidgetAt(x,y) then
+			self.pressedButton.fn()
+		end
+		self.pressedButton.state = 'active'
+		self.pressedButton = nil
+	end
 end
 
 ---@param w number
 ---@param h number
 function Menu:resize(w, h)
-    print('menu resize', w, h)
 	self.backgroundCanvas = nil
-	_G.uiFont = love.graphics.newFont(_G.ORD_FONT, _G.SETTINGS.cardWidth / 4)
-    local y = h / 2
-   	for _, b in ipairs(self.buttons) do
+	_G.UI_FONT = love.graphics.newFont(_G.ORD_FONT, _G.SETTINGS.cardWidth / 4)
+	local y = h / 2
+	for _, b in ipairs(self.buttons) do
 		b:resize(w, h)
 		b:setPosition(w / 2, y)
-        y = y + (b.radius * 2) + (b.radius / 2)
+		y = y + (b.radius * 2) + (b.radius / 2)
 	end
 
 end
@@ -119,18 +118,15 @@ function Menu:draw()
 	end
 	love.graphics.draw(self.backgroundCanvas, 0, 0)
 
-    local ww, wh, _ = love.window.getMode()
-    Util.setColor('Ivory')
-    love.graphics.setFont(_G.uiFont)
-    Util.printCentered('LÕVE Gin Poker', 0, 0, ww, wh/2)
+	local ww, wh, _ = love.window.getMode()
+	Util.setColor('Ivory')
+	love.graphics.setFont(_G.UI_FONT)
+	Util.printCentered('LÕVE Gin Poker', 0, 0, ww, wh/2)
 
-    for _, b in ipairs(self.buttons) do
+	for _, b in ipairs(self.buttons) do
 		b:draw()
 	end
 end
 
----@param dt number
-function Menu:update(dt)
-end
-
 return Menu
+
