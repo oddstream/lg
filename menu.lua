@@ -20,7 +20,7 @@ function Menu.new()
 	o.playButton = Button.new({
 		state = 'active',
 		text = 'Play',
-		radius = _G.SETTINGS.cardWidth / 2,
+		radiusFactor = 2,
 		backColor = 'CornflowerBlue',
 		foreColor = 'Ivory',
 		fn = function() TransitionToScene(Baize.new()) end
@@ -28,7 +28,7 @@ function Menu.new()
 		o.quitButton = Button.new({
 		state = 'active',
 		text = 'Quit',
-		radius = _G.SETTINGS.cardWidth / 2,
+		radiusFactor = 2,
 		backColor = 'CornflowerBlue',
 		foreColor = 'Ivory',
 		fn = function() love.event.quit(0) end,

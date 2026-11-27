@@ -39,7 +39,7 @@ function Stock:fill()
 			-- card owner is assigned in Pile.push
 		end
 	end
-	assert(#self.cards==52)
+	print(#self.cards, 'cards')
 end
 
 function Stock:shuffle()

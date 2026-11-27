@@ -4,10 +4,6 @@ local Widget = require 'ui_widget'
 local Util = require 'util'
 
 ---@class Label : Widget
----@field text string
----@field radius number
----@field foreColor string
----@field backColor string
 
 local Label = {}
 Label.__index = Label
@@ -15,7 +11,12 @@ setmetatable(Label, {__index = Widget})
 
 ---@param o table
 function Label.new(o)
-	o = Widget.new(o)
+    o = Widget.new(o)
+    o.width = o.width or _G.SETTINGS.cardHeight
+    o.height = o.height or _G.SETTINGS.cardWidth
+	o.backColor = o.backColor or ''
+    o.foreColor = o.foreColor or 'CornflowerBlue'
+	o.state = o.state or 'active'
 	return setmetatable(o, Label)
 end
 
@@ -30,7 +31,7 @@ function Label:draw()
 
 	if self.state == 'hidden' then return end
 
-	if self.backColor then
+	if self.backColor and string.len(self.backColor) > 0 then
 		local backColor
 		if self.state == 'disabled' then
 			backColor = 'UiGrayedOut'

@@ -5,18 +5,20 @@
 -- require caches the module’s returned value in package.loaded
 
 local log = require 'log'
-local poker = require 'poker'
+local poker = require 'poker with tie break'
 local Card  = require 'card'
 
 local roundHandSizes = {
-	{bot=6, ape=8},	-- ape>8 overlaps the Play button
-	{bot=7, ape=8},
-	{bot=7, ape=8},
-	{bot=8, ape=8},
-	{bot=8, ape=7},
-	{bot=9, ape=7},
-	{bot=9, ape=7},
+	{bot=6, ape=7, discards=1},
+	{bot=7, ape=7, discards=1},
+	{bot=7, ape=7, discards=2},
+	{bot=7, ape=7, discards=2},
+	{bot=8, ape=7, discards=2},
+	{bot=8, ape=7, discards=3},
+	{bot=8, ape=7, discards=3},
 }
+
+local maxHand = 5 -- maximum hands per round (experimental)
 
 ---@class (exact) Jinn
 ---@field __index Jinn
@@ -24,12 +26,14 @@ local roundHandSizes = {
 ---@field baize table
 ---@field state string 'setup'|'apeDraw'|'apeDiscard'|'botDraw'|'botDiscard'|'cashout'|'gameover'
 ---@field round integer
+---@field hand integer
 ---@field botRoundsWon integer
 ---@field apeRoundsWon integer
 ---@field botScoreThisRound integer
 ---@field apeScoreThisRound integer
 ---@field new function
 ---@field isAllowed function
+---@field canToggleSelect function
 ---@field notifyCardMove function
 ---@field notifyCardTapped function
 ---@field action function
@@ -108,6 +112,20 @@ function Jinn:isAllowed(card, from, to)
 	end
 	log.warn('not allowed')
 	return false
+end
+
+---@param card Card
+---@return boolean
+function Jinn:canToggleSelect(card)
+	if not card.selected and self.baize.apeHand:numberSelected() == 5 then
+		log.warn('cannot select more than 5 cards')
+		return false
+	end
+	if self.state == 'cashout' then
+		log.warn('cannot select or unselect cards during cashout')
+		return false
+	end
+	return true
 end
 
 ---@param card Card
@@ -222,7 +240,7 @@ function Jinn:cashout()
 		if src[i].selected then
 			src[i]:unselect()
 			local c = table.remove(src, i)
-			self.baize.discard:pushBottom(c)
+			self.baize.discard:pushFront(c)
 		end
 	end
 	-- hide remaining bot cards
@@ -241,7 +259,7 @@ function Jinn:cashout()
 		if src[i].selected then
 			src[i]:unselect()
 			local c = table.remove(src, i)
-			self.baize.discard:pushBottom(c)
+			self.baize.discard:pushFront(c)
 		end
 	end
 	-- refill ape hand from stock
@@ -250,8 +268,11 @@ function Jinn:cashout()
 	end
 	self:apeHandChanged()
 
-	-- goto setup or gameover state if stock is empty, otherwise goto apeDraw state
-	if #self.baize.stock.cards > 0 then
+	self.hand = self.hand + 1
+
+	-- goto setup or gameover state if stock is empty, or maximum hands reached,
+	-- otherwise goto apeDraw state
+	if self.hand <= maxHand and #self.baize.stock.cards > 0 then
 		self.state = 'apeDraw'
 	else
 		if self.apeScoreThisRound > self.botScoreThisRound then
@@ -271,6 +292,7 @@ function Jinn:action()
 
 	if self.state == 'setup' then
 		self.round = self.round + 1
+		self.hand = 1
 		self.botScoreThisRound = 0
 		self.apeScoreThisRound = 0
 		self.baize.botHand.size = roundHandSizes[self.round].bot
@@ -306,6 +328,8 @@ function Jinn:action()
 		-- TODO UI bling
 		PopScene()	-- pop Baize to go back to Menu
 	elseif self.state == 'apeDraw' then
+		self.baize.handLabel.text = string.format('Hand %d of %d', self.hand, maxHand)
+
 		if self.baize.apeHand:numberSelected() > 0 then
 			self.baize.playButton.state = 'active'
 		else

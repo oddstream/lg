@@ -3,8 +3,8 @@
 
 function love.conf(t)
 	t.identity = 'ginpoker' -- name of the save directory
-	t.window.width = 1024
-	t.window.height = 800
+	t.window.width = 1280	-- same as U11 tablet
+	t.window.height = 800	-- same as U11 tablet
 	t.window.title = 'LÕVE Gin Poker'
 
 	-- The highdpi window flag must be enabled to use the full pixel density of a Retina screen on Mac OS X and iOS.

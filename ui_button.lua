@@ -6,6 +6,7 @@ local Util = require 'util'
 ---@class Button : Widget
 ---@field text string
 ---@field radius number
+---@field radiusFactor number
 ---@field foreColor string
 ---@field backColor string
 
@@ -32,7 +33,7 @@ end
 ---@param w number
 ---@param h number
 function Button:resize(w, h)
-	self.radius = _G.SETTINGS.cardWidth / 2
+	self.radius = _G.SETTINGS.cardWidth / self.radiusFactor
 end
 
 function Button:draw()

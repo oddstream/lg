@@ -11,6 +11,9 @@ local Util = require 'util'
 ---@field y number
 ---@field width number
 ---@field height number
+---@field text string
+---@field foreColor string
+---@field backColor string
 ---@field getPosition function
 ---@field setPosition function
 ---@field getRect function

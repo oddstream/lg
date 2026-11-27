@@ -24,8 +24,8 @@ require 'colors'
 ---@class (exact) Baize
 ---@field __index Baize
 ---@field __tostring function
----@field cardRect Rect
 ---@field uiRect Rect
+---@field cardRect Rect
 ---@field stroke table
 ---@field labels Label[]
 ---@field buttons Button[]
@@ -69,23 +69,37 @@ function Baize.new()
 
 	o.allPiles = { o.stock, o.discard, o.botHand, o.apeHand }
 
+	o.buttons = {}
+	if love.system.getOS() == 'Android' then
+		o.quitButton = Button.new({
+			state = 'active',
+			text = 'X',
+			radiusFactor = 4,
+			backColor = 'CornflowerBlue',
+			foreColor = 'Ivory',
+			fn = function() PopScene() end,
+		})
+		table.insert(o.buttons, o.quitButton)
+	end
 	o.playButton = Button.new({
 		state = 'disabled',
 		text = 'Play',
-		radius = _G.SETTINGS.cardWidth / 2,
+		radiusFactor = 2,
 		backColor = 'CornflowerBlue',
 		foreColor = 'Ivory',
 		fn = function() o.jinn:play() end,
-	})
+    })
+	table.insert(o.buttons, o.playButton)
+
 	o.cashoutButton = Button.new({
 		state = 'disabled',
 		text = 'Cash Out',
-		radius = _G.SETTINGS.cardWidth / 2,
+		radiusFactor = 2,
 		backColor = 'Gold',
 		foreColor = 'Black',
 		fn = function() o.jinn:cashout() end,
-	})
-	o.buttons = {o.playButton,o.cashoutButton}
+    })
+	table.insert(o.buttons, o.cashoutButton)
 
 	-- [ Round 7 ]
 	-- [ Bot Score ]
@@ -96,65 +110,56 @@ function Baize.new()
 	-- [ Ape 7 x 2 ]
 
 	o.roundLabel = Label.new({
-		width = _G.SETTINGS.cardHeight,
-		height = _G.SETTINGS.cardWidth / 2,
 		backColor = 'Black',
 		foreColor = 'Ivory',
 		state = 'active',
 	})
 	o.roundProgressLabel = Label.new({
-		width = _G.SETTINGS.cardHeight,
-		height = _G.SETTINGS.cardWidth / 2,
 		backColor = 'Black',
 		foreColor = 'Ivory',
 		state = 'active',
 	})
 
+	o.handLabel = Label.new({
+		backColor = 'DarkGreen',
+		foreColor = 'Ivory',
+		state = 'active',
+	})
+
 	o.botScoreLabel = Label.new({
-		width = _G.SETTINGS.cardHeight,
-		height = _G.SETTINGS.cardWidth / 2,
 		-- backColor = 'DarkGreen',
 		foreColor = 'CornflowerBlue',
 		state = 'active',
 	})
 	o.botTypeLabel = Label.new({
-		width = _G.SETTINGS.cardHeight,
-		height = _G.SETTINGS.cardWidth / 2,
 		-- backColor = 'DarkGreen',
 		foreColor = 'CornflowerBlue',
 		state = 'active',
 	})
 	o.botMultLabel = Label.new({
-		width = _G.SETTINGS.cardHeight,
-		height = _G.SETTINGS.cardWidth / 2,
 		-- backColor = 'DarkGreen',
 		foreColor = 'CornflowerBlue',
 		state = 'active',
 	})
 
 	o.apeScoreLabel = Label.new({
-		width = _G.SETTINGS.cardHeight,
-		height = _G.SETTINGS.cardWidth / 2,
 		-- backColor = 'DarkGreen',
 		foreColor = 'Ivory',
 		state = 'active',
 	})
 	o.apeTypeLabel = Label.new({
-		width = _G.SETTINGS.cardHeight,
-		height = _G.SETTINGS.cardWidth / 2,
 		-- backColor = 'DarkGreen',
 		foreColor = 'Ivory',
 		state = 'active',
 	})
 	o.apeMultLabel = Label.new({
-		width = _G.SETTINGS.cardHeight,
-		height = _G.SETTINGS.cardWidth / 2,
 		-- backColor = 'DarkGreen',
 		foreColor = 'Ivory',
 		state = 'active',
 	})
 	o.labels = {
-		o.roundLabel, o.roundProgressLabel,
+        o.roundLabel, o.roundProgressLabel,
+		o.handLabel,
 		o.botScoreLabel,o.botTypeLabel,o.botMultLabel,
 		o.apeScoreLabel,o.apeTypeLabel,o.apeMultLabel
 	}
@@ -186,7 +191,6 @@ function Baize:deal()
 		end
 	end
 	-- log.info(#self.stock.cards, 'cards in stock')
-	assert(#self.stock.cards==52)
 	-- shuffle stock
 	self.stock:shuffle()
 	-- deal
@@ -257,11 +261,10 @@ end
 ---@param y number
 ---@return Widget|Button|nil
 function Baize:findWidgetAt(x, y)
-	if self.playButton:isPointOver(x, y) then
-		return self.playButton
-	end
-	if self.cashoutButton:isPointOver(x, y) then
-		return self.cashoutButton
+	for _, b in ipairs(self.buttons) do
+		if b:isPointOver(x, y) then
+			return b
+		end
 	end
 	return nil
 end
@@ -425,11 +428,8 @@ function Baize:mouseReleased(x, y, button, istouch, presses)
 				end
 			elseif card.owner == self.apeHand then
 				-- no longer tap to move card to discard; ape has to drag it (sorry)
-				card:stopDrag()
-				-- TODO this test belongs in Jinn, where the rules are
-				if self.apeHand:numberSelected() == 5 and not card.selected then
-					log.warn('cannot select more than 5 cards')
-				else
+                card:stopDrag()
+				if self.jinn:canToggleSelect(card) then
 					card:toggleSelect()
 					self.jinn:notifyCardTapped(card)
 				end
@@ -494,19 +494,30 @@ function Baize:resize(w, h)
 		p:fan()
 	end
 
-	-- all buttons sit at bottom of the screen/cardRect
-	for _, b in ipairs(self.buttons) do
-		b:resize(w, h)
+	-- center the buttons on a vertical line 3/4 of a card width from the right margin of cardRect
+	local x = self.cardRect.x + self.cardRect.width - _G.SETTINGS.cardWidth * 0.75
+	if self.quitButton then
+		-- quit button at the top right
+		self.quitButton:resize(w, h)	-- recalc radius
+		local gap = self.quitButton.radius / 2
+		self.quitButton:setPosition(
+			x,
+			self.cardRect.y + self.quitButton.radius + gap
+		)
+	end
+	-- play, cashout buttons sit at bottom of the screen/cardRect
+	for _, b in ipairs({self.playButton, self.cashoutButton}) do
+		b:resize(w, h)	-- recalc radius
 		local gap = b.radius / 2
 		b:setPosition(
-			self.cardRect.x + self.cardRect.width - b.radius - gap,
+			x,
 			self.cardRect.y + self.cardRect.height - b.radius - gap
 		)
 	end
 	-- labels stack vertically from the top of the uiRect
 	local y = self.uiRect.y
 	for _, l in ipairs(self.labels) do
-		l:resize(w, h)
+		l:resize(w, h)	-- recalc width, height
 		l:setPosition(self.uiRect.x, y)
 		y = y + l.height
 	end

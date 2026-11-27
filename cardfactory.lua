@@ -153,9 +153,13 @@ local function createRegularFace(cardFaceTexture, ordFont, suitFont, suitFontSma
 	printAt(_G.ORD2STRING[ord], 0.15, 0.15, ordFont)
 	printAt(_G.ORD2STRING[ord], 0.85, 0.85, ordFont, math.pi)
 
-	if ord > 1 and ord < 11 then
+	if ord == 1 then
+		-- Joker
+		-- purdy rectangle in the middle
+		love.graphics.setColor(0,0,0,0.05)
+		love.graphics.rectangle('fill', width * 0.25, height * 0.25, width * 0.5, height * 0.5, width / 20, height / 20)
+	elseif ord > 1 and ord < 11 then
 		-- cards 2 .. 10 get pips in the middle
-
 		love.graphics.setColor(love.math.colorFromBytes(unpack(suitRGB)))
 		local pips = pipInfo[ord]
 		for _, pip in ipairs(pips) do
@@ -172,8 +176,7 @@ local function createRegularFace(cardFaceTexture, ordFont, suitFont, suitFontSma
 	else
 		-- Ace, Jack, Queen, King get suit runes at top right and bottom left
 		-- so the suit can be seen when fanned
-		-- they also get purdy rectangles in the middle
-
+		-- they also get a purdy rectangle in the middle
 		love.graphics.setColor(0,0,0,0.05)
 		love.graphics.rectangle('fill', width * 0.25, height * 0.25, width * 0.5, height * 0.5, width / 20, height / 20)
 

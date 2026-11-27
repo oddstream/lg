@@ -7,16 +7,16 @@
 local poker = {}
 
 poker.handScore = {
-  ['Royal Flush'] = {uk=30, us=100},
-  ['Straight Flush'] = {uk=30, us=75},
-  ['Four of a Kind'] = {uk=16, us=50},
-  ['Full House'] = {uk=10, us=25},
-  ['Flush'] = {uk=5, us=20},
-  ['Straight'] = {uk=12, us=15},
-  ['Three of a Kind'] = {uk=6, us=10},
-  ['Two Pair'] = {uk=3, us=5},
-  ['One Pair'] = {uk=1, us=2},
-  ['High Card'] = {uk=0, us=0},
+	['Royal Flush'] = 100,
+	['Straight Flush'] = 75,
+	['Four of a Kind'] = 50,
+	['Full House'] = 25,
+	['Flush'] = 20,
+	['Straight'] = 15,
+	['Three of a Kind'] = 10,
+	['Two Pair'] = 5,
+	['One Pair'] = 2,
+	['High Card'] = 1,
 }
 
 function poker.handType5(cards)
@@ -81,6 +81,107 @@ function poker.handType5(cards)
 	return "High Card"
 end
 
+-- Returns only the cards that form the given handType within a 1-5 card set.
+-- Contributed by Gemini AI, clunky AF
+---@param cards Card[]
+---@param handType string
+---@return Card[]
+local function filterScoringCards(cards, handType)
+	if handType == "Royal Flush"
+		or handType == "Straight Flush"
+		or handType == "Full House"
+		or handType == "Flush"
+		or handType == "Straight"
+	then
+		local copy = {}
+		for i, c in ipairs(cards) do
+			copy[i] = c
+		end
+		return copy
+	end
+
+	local counts = {}
+	for _, c in ipairs(cards) do
+		counts[c.ord] = (counts[c.ord] or 0) + 1
+	end
+
+	if handType == "Four of a Kind" then
+		local targetRank
+		for rank, cnt in pairs(counts) do
+			if cnt == 4 then
+				targetRank = rank
+				break
+			end
+		end
+		local result = {}
+		for _, c in ipairs(cards) do
+			if c.ord == targetRank then
+				result[#result + 1] = c
+			end
+		end
+		return result
+	end
+
+	if handType == "Three of a Kind" then
+		local targetRank
+		for rank, cnt in pairs(counts) do
+			if cnt == 3 then
+				targetRank = rank
+				break
+			end
+		end
+		local result = {}
+		for _, c in ipairs(cards) do
+			if c.ord == targetRank then
+				result[#result + 1] = c
+			end
+		end
+		return result
+	end
+
+	if handType == "Two Pair" then
+		local pairRanks = {}
+		for rank, cnt in pairs(counts) do
+			if cnt == 2 then
+				pairRanks[rank] = true
+			end
+		end
+		local result = {}
+		for _, c in ipairs(cards) do
+			if pairRanks[c.ord] then
+				result[#result + 1] = c
+			end
+		end
+		return result
+	end
+
+	if handType == "One Pair" then
+		local targetRank
+		for rank, cnt in pairs(counts) do
+			if cnt == 2 then
+				targetRank = rank
+				break
+			end
+		end
+		local result = {}
+		for _, c in ipairs(cards) do
+			if c.ord == targetRank then
+				result[#result + 1] = c
+			end
+		end
+		return result
+	end
+
+	-- "High Card": keep only the single highest-ordinal card
+	local bestCard = cards[1]
+	for i = 2, #cards do
+		if cards[i].ord > bestCard.ord then
+			bestCard = cards[i]
+		end
+	end
+	return { bestCard }
+end
+
 ---@class (exact) PokerHandInfo
 ---@field type string
 ---@field score integer
@@ -136,7 +237,14 @@ function poker.handTypeEx(hand)
 	end
 	if #hand <= 5 then
 	  local t = poker.handType5(hand)
-		return {type=t, score=poker.handScore[t].us, cards=hand, value=totalValue(hand)}
+		-- return {type=t, score=poker.handScore[t], cards=hand, value=totalValue(hand)}
+		local scoringCards = filterScoringCards(hand, t)
+		return {
+			type = t,
+			score = poker.handScore[t],
+			cards = scoringCards,
+			value = totalValue(scoringCards)
+		}
 	end
 	local co = get_combinations(hand, 5)
 	local bestType = 'High Card'
@@ -146,13 +254,20 @@ function poker.handTypeEx(hand)
 		local success, result = coroutine.resume(co)
 		if not success or not result then break end
 		local typ = poker.handType5(result)
-		if poker.handScore[typ].us > bestScore then
+		if poker.handScore[typ] > bestScore then
 		bestType = typ
-		bestScore = poker.handScore[typ].us
+		bestScore = poker.handScore[typ]
 		bestHand = result
 		end
 	end
-	return {type=bestType, score=bestScore, cards=bestHand, value=totalValue(bestHand)}
+	local scoringCards = filterScoringCards(bestHand, bestType)
+	return {
+		type = bestType,
+		score = bestScore,
+		cards = scoringCards,
+		value = totalValue(scoringCards)
+	}
+	-- return {type=bestType, score=bestScore, cards=bestHand, value=totalValue(bestHand)}
 end
 
 return poker

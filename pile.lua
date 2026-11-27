@@ -19,7 +19,7 @@ local Card = require 'card'
 ---@field peek function
 ---@field pop function
 ---@field push function
----@field pushBottom function
+---@field pushFront function
 ---@field cardDragged function(c:Card)
 ---@field removeCard function(c:Card)
 ---@field insertCard function(c:Card)
@@ -82,7 +82,7 @@ function Pile:push(c)
 end
 
 ---@param c Card
-function Pile:pushBottom(c)
+function Pile:pushFront(c)
 	assert(self.cards)
 	assert(Card.isCard(c))
 	table.insert(self.cards, 1, c)
