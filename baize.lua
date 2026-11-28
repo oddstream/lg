@@ -175,11 +175,11 @@ function Baize.new()
 end
 
 function Baize:load()
-	print "baize loaded"
+	-- print "baize loaded"
 end
 
 function Baize:unload()
-	print "baize unloaded"
+	-- print "baize unloaded"
 	self.backgroundCanvas = nil
 end
 

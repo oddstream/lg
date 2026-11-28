@@ -148,14 +148,20 @@ function Util.inRect(x, y, rx, ry, rw, rh)
 	return x >= rx and y >= ry and x < (rx + rw) and y < (ry + rh)
 end
 
+---@param text string
+---@param x number
+---@param y number
+---@param w number
+---@param h number
 function Util.printCentered(text, x, y, w, h)
 	assert(type(text)=='string')
 	local font = love.graphics.getFont()
 	if not font then return end
-	local _, lines = font:getWrap(text, w)
-	local textHeight = #lines * font:getHeight() * font:getLineHeight()
-	local textY = y + (h - textHeight) / 2
-	love.graphics.printf(text, x, textY, w, "center")
+	local tw = font:getWidth(text)
+	local th = font:getHeight()
+	love.graphics.print(text,
+		x + w/2 - tw/2,
+		y + h/2 - th/2)
 end
 
 return Util

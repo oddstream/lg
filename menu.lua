@@ -41,11 +41,11 @@ function Menu.new()
 end
 
 function Menu:load()
-	print 'menu loaded'
+	-- print 'menu loaded'
 end
 
 function Menu:unload()
-	print 'menu unloaded'
+	-- print 'menu unloaded'
 	self.backgroundCanvas = nil
 end
 
@@ -121,7 +121,7 @@ function Menu:draw()
 	local ww, wh, _ = love.window.getMode()
 	Util.setColor('Ivory')
 	love.graphics.setFont(_G.UI_FONT)
-	Util.printCentered('LÕVE Gin Poker', 0, 0, ww, wh/2)
+	Util.printCentered('LÕVE Gin Rummy + Poker', 0, 0, ww, wh/2)
 
 	for _, b in ipairs(self.buttons) do
 		b:draw()

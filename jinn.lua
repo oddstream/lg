@@ -5,17 +5,18 @@
 -- require caches the module’s returned value in package.loaded
 
 local log = require 'log'
+
 local poker = require 'poker with tie break'
 local Card  = require 'card'
 
 local roundHandSizes = {
-	{bot=6, ape=7, discards=1},
-	{bot=7, ape=7, discards=1},
-	{bot=7, ape=7, discards=2},
-	{bot=7, ape=7, discards=2},
-	{bot=8, ape=7, discards=2},
-	{bot=8, ape=7, discards=3},
-	{bot=8, ape=7, discards=3},
+	{bot=6, ape=9},
+	{bot=7, ape=9},
+	{bot=7, ape=8},
+	{bot=7, ape=8},
+	{bot=8, ape=7},
+	{bot=8, ape=7},
+	{bot=8, ape=7},
 }
 
 local maxHand = 5 -- maximum hands per round (experimental)
@@ -24,7 +25,7 @@ local maxHand = 5 -- maximum hands per round (experimental)
 ---@field __index Jinn
 ---@field __tostring function
 ---@field baize table
----@field state string 'setup'|'apeDraw'|'apeDiscard'|'botDraw'|'botDiscard'|'cashout'|'gameover'
+---@field state string 'setup'|'apePlayOrDraw'|'apeDiscard'|'botPlayOrDraw'|'botDiscard'|'cashout'|'gameover'
 ---@field round integer
 ---@field hand integer
 ---@field botRoundsWon integer
@@ -99,8 +100,7 @@ end
 ---@param to Pile
 ---@return boolean
 function Jinn:isAllowed(card, from, to)
-	-- log.trace('isAllowed?', self.state, card, from, to)
-	if (self.state == 'apeDraw')
+	if (self.state == 'apePlayOrDraw')
 		and (from == self.baize.stock or from == self.baize.discard)
 		and (to == self.baize.apeHand)
 		then return true
@@ -110,19 +110,24 @@ function Jinn:isAllowed(card, from, to)
 		and (to == self.baize.discard)
 		then return true
 	end
-	log.warn('not allowed')
 	return false
 end
 
 ---@param card Card
 ---@return boolean
 function Jinn:canToggleSelect(card)
-	if not card.selected and self.baize.apeHand:numberSelected() == 5 then
-		log.warn('cannot select more than 5 cards')
-		return false
+	if not card.selected then
+		local n = 0
+		for _, c in ipairs(self.baize.apeHand.cards) do
+			if c.selected then
+				n = n + 1
+			end
+		end
+		if n == 5 then
+			return false
+		end
 	end
 	if self.state == 'cashout' then
-		log.warn('cannot select or unselect cards during cashout')
 		return false
 	end
 	return true
@@ -132,8 +137,7 @@ end
 ---@param from Pile
 ---@param to Pile
 function Jinn:notifyCardMove(card, from, to)
-	-- log.trace('notifyCardMove', self.state, card, from, to)
-	if self.state == 'apeDraw'
+	if self.state == 'apePlayOrDraw'
 		and (from == self.baize.stock or from == self.baize.discard)
 		and to == self.baize.apeHand
 	then
@@ -145,7 +149,7 @@ function Jinn:notifyCardMove(card, from, to)
 		and to == self.baize.discard
 	then
 		self:apeHandChanged()
-		self.state = 'botDraw'
+		self.state = 'botPlayOrDraw'
 	end
 end
 
@@ -220,13 +224,12 @@ function Jinn:cashout()
 	-- TODO UI bling here
 	if self.baize.apeHand.sel then
 		if (botScore * botValue) > (apeScore * apeValue) then
-			log.info('bot wins', self.baize.botHand.sel.type, 'better than', self.baize.apeHand.sel.type)
+			log.info('bot wins hand')
 		elseif apeScore > botScore then
-			log.info('ape wins', self.baize.apeHand.sel.type, 'better than', self.baize.botHand.sel.type)
+			log.info('ape wins hand')
 		else
-			log.info('draw')
+			log.info('drawn hand')
 		end
-		log.info('bot score', botValue * botScore, 'ape score', apeValue * apeScore)
 	end
 
 	self.botScoreThisRound = self.botScoreThisRound + botValue * botScore
@@ -271,14 +274,23 @@ function Jinn:cashout()
 	self.hand = self.hand + 1
 
 	-- goto setup or gameover state if stock is empty, or maximum hands reached,
-	-- otherwise goto apeDraw state
+	-- otherwise goto botDraw/apeDraw state
 	if self.hand <= maxHand and #self.baize.stock.cards > 0 then
-		self.state = 'apeDraw'
+		if self.hand % 2 == 0 then
+			self.state = 'botPlayOrDraw'
+		else
+			self.state = 'apePlayOrDraw'
+		end
 	else
+		-- TODO UI bling
 		if self.apeScoreThisRound > self.botScoreThisRound then
+			log.info('ape wins round')
 			self.apeRoundsWon = self.apeRoundsWon + 1
 		elseif self.botScoreThisRound > self.apeScoreThisRound then
+			log.info('bot wins round')
 			self.botRoundsWon = self.botRoundsWon + 1
+		else
+			log.info('round drawn')
 		end
 		if #roundHandSizes == self.round then
 			self.state = 'gameover'
@@ -301,7 +313,7 @@ function Jinn:action()
 		self:botHandChanged()
 		self:apeHandChanged()
 
-		self.baize.roundLabel.text = string.format('Round %d', self.round)
+		self.baize.roundLabel.text = string.format('Round %d of %d', self.round, #roundHandSizes)
 		self.baize.roundProgressLabel.text = string.format('Bot %d, Ape %d',
 			self.botRoundsWon,
 			self.apeRoundsWon
@@ -315,19 +327,23 @@ function Jinn:action()
 		self.baize.apeHand.sel = nil
 		self.baize.playButton.state = 'disabled'
 		self.baize.cashoutButton.state = 'hidden'
-		self.state = 'apeDraw'
-	elseif self.state == 'gameover' then
-		log.info('game over')
-		if self.botRoundsWon > self.apeRoundsWon then
-			log.info('bot wins', self.botRoundsWon, ':', self.apeRoundsWon)
-		elseif self.apeRoundsWon > self.botRoundsWon then
-			log.info('ape wins', self.apeRoundsWon, ':', self.botRoundsWon)
+		if self.hand % 2 == 0 then
+			self.state = 'botPlayOrDraw'
 		else
-			log.info('game tied', self.apeRoundsWon, ':', self.botRoundsWon)
+			self.state = 'apePlayOrDraw'
+		end
+	elseif self.state == 'gameover' then
+		-- TODO UI bling
+		if self.apeRoundsWon > self.botRoundsWon then
+			log.info('ape wins game')
+		elseif self.botRoundsWon > self.apeRoundsWon then
+			log.info('bot wins game')
+		else
+			log.info('game drawn')
 		end
 		-- TODO UI bling
 		PopScene()	-- pop Baize to go back to Menu
-	elseif self.state == 'apeDraw' then
+	elseif self.state == 'apePlayOrDraw' then
 		self.baize.handLabel.text = string.format('Hand %d of %d', self.hand, maxHand)
 
 		if self.baize.apeHand:numberSelected() > 0 then
@@ -340,7 +356,7 @@ function Jinn:action()
 		self.baize.playButton.state = 'disabled'
 		self.baize.cashoutButton.state = 'hidden'
 		-- waiting for player to discard, do nothing
-	elseif self.state == 'botDraw' then
+	elseif self.state == 'botPlayOrDraw' then
 		-- bot must play, or take a card from stock or discard
 		-- cheat: if bot hand > ape hand, then play
 
@@ -370,7 +386,6 @@ function Jinn:action()
 			---@type Card
 			local c = self.baize.stock:peek()
 			if not c then
-				log.warn('botDraw: Stock is empty')
 			else
 				table.insert(arr, {ord=c.ord, suit=c.suit})
 				info = poker.handTypeEx(arr)
@@ -379,7 +394,6 @@ function Jinn:action()
 				arr = self.baize.botHand:createCopy('all')
 				c = self.baize.discard:peek()
 				if not c then
-					log.warn('botDraw: Discard is empty')
 				else
 					table.insert(arr, {ord=c.ord, suit=c.suit})
 					info = poker.handTypeEx(arr)
@@ -426,7 +440,7 @@ function Jinn:action()
 		self:botHandChanged()
 		self.baize.playButton.state = 'disabled'
 		self.baize.cashoutButton.state = 'hidden'
-		self.state = 'apeDraw'
+		self.state = 'apePlayOrDraw'
 	elseif self.state == 'cashout' then
 		self.baize.playButton.state = 'hidden'
 		self.baize.cashoutButton.state = 'active'

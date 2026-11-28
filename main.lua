@@ -62,7 +62,7 @@ function love.load(args)
 	stage = scenes.new()
 
 	local ww, wh, _ = love.window.getMode()
-	log.trace('load, initial window size', ww, wh)
+	-- log.trace('load, initial window size', ww, wh)
 	_G.SETTINGS.resize(ww, wh)
 	_G.cardFaceTextures, _G.cardBackTexture, _G.cardShadowTexture = cardTextureFactory()
 	assert(_G.cardFaceTextures)
