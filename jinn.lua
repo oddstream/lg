@@ -19,8 +19,6 @@ local roundHandSizes = {
 	{bot=8, ape=7},
 }
 
-local maxHand = 5 -- maximum hands per round (experimental)
-
 ---@class (exact) Jinn
 ---@field __index Jinn
 ---@field __tostring function
@@ -214,26 +212,27 @@ function Jinn:cashout()
 	assert(self.baize.botHand.sel)
 	local apeScore = 0
 	local apeValue = 0
+	local apeTotal = 0
 	if self.baize.apeHand.sel then
 		apeScore = self.baize.apeHand.sel.score
 		apeValue = valueTotal(self.baize.apeHand.sel.cards)
+		apeTotal = apeValue * apeScore
 	end
 	local botValue = valueTotal(self.baize.botHand.sel.cards)
 	local botScore = self.baize.botHand.sel.score
+	local botTotal = botValue * botScore
 
 	-- TODO UI bling here
-	if self.baize.apeHand.sel then
-		if (botScore * botValue) > (apeScore * apeValue) then
-			log.info('bot wins hand')
-		elseif apeScore > botScore then
-			log.info('ape wins hand')
-		else
-			log.info('drawn hand')
-		end
+	if botTotal > apeTotal then
+		log.info('cashout - bot wins hand')
+	elseif apeTotal > botTotal then
+		log.info('cashout - ape wins hand')
+	else
+		log.info('cashout - drawn hand')
 	end
 
-	self.botScoreThisRound = self.botScoreThisRound + botValue * botScore
-	self.apeScoreThisRound = self.apeScoreThisRound + apeValue * apeScore
+	self.botScoreThisRound = self.botScoreThisRound + botTotal
+	self.apeScoreThisRound = self.apeScoreThisRound + apeTotal
 	self.baize.botScoreLabel.text = string.format('Bot %d', self.botScoreThisRound)
 	self.baize.apeScoreLabel.text = string.format('Ape %d', self.apeScoreThisRound)
 
@@ -271,31 +270,38 @@ function Jinn:cashout()
 	end
 	self:apeHandChanged()
 
-	self.hand = self.hand + 1
+	if #self.baize.stock.cards <= 2 then
+		-- from the Wikipedia Gin Rummy rules:
+		-- "Players alternate taking turns until one player ends the round by declaring the hand over (*knocking*),
+		-- or until only two cards remain in the stock pile,
+		-- in which case the round ends in a draw and no points are awarded."
+		-- TODO UI bling
+		log.info('cashout - hand drawn by stock exhaustion')
 
-	-- goto setup or gameover state if stock is empty, or maximum hands reached,
-	-- otherwise goto botDraw/apeDraw state
-	if self.hand <= maxHand and #self.baize.stock.cards > 0 then
-		if self.hand % 2 == 0 then
-			self.state = 'botPlayOrDraw'
-		else
-			self.state = 'apePlayOrDraw'
-		end
-	else
+		-- no more hands possible, so this is the end of the round
 		-- TODO UI bling
 		if self.apeScoreThisRound > self.botScoreThisRound then
-			log.info('ape wins round')
+			log.info('cashout - ape wins round')
 			self.apeRoundsWon = self.apeRoundsWon + 1
 		elseif self.botScoreThisRound > self.apeScoreThisRound then
-			log.info('bot wins round')
+			log.info('cashout - bot wins round')
 			self.botRoundsWon = self.botRoundsWon + 1
 		else
-			log.info('round drawn')
+			log.info('cashout - round drawn')
 		end
 		if #roundHandSizes == self.round then
 			self.state = 'gameover'
 		else
 			self.state = 'setup'
+		end
+	else
+		-- hand not drawn (by stock exhaustion), go do another one
+		self.hand = self.hand + 1
+
+		if self.hand % 2 == 0 then
+			self.state = 'botPlayOrDraw'
+		else
+			self.state = 'apePlayOrDraw'
 		end
 	end
 end
@@ -344,7 +350,7 @@ function Jinn:action()
 		-- TODO UI bling
 		PopScene()	-- pop Baize to go back to Menu
 	elseif self.state == 'apePlayOrDraw' then
-		self.baize.handLabel.text = string.format('Hand %d of %d', self.hand, maxHand)
+		self.baize.handLabel.text = string.format('Hand %d', self.hand)
 
 		if self.baize.apeHand:numberSelected() > 0 then
 			self.baize.playButton.state = 'active'
